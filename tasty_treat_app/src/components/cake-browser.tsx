@@ -107,7 +107,7 @@ const CAKES_DATA = [
 
 export default function CakeBrowser() {
   const [selectedCategory, setSelectedCategory] = useState("All Cakes")
-  const [priceRange, setPriceRange] = useState([0, 500])
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 500])
   const [selectedFlavors, setSelectedFlavors] = useState<string[]>([])
   const [selectedDietary, setSelectedDietary] = useState<string[]>([])
   const [selectedSize, setSelectedSize] = useState<string[]>([])
@@ -132,7 +132,7 @@ export default function CakeBrowser() {
     <div className="flex flex-col w-full min-h-screen bg-background">
       {/* Header Section */}
       <div className="w-full px-6 lg:px-12 pt-8 pb-6 border-b border-border">
-        <h1 className="text-4xl lg:text-5xl font-serif text-primary mb-3">Artisan Cakes</h1>
+        <h1 className="text-4xl lg:text-5xl font-serif text-primary mb-3">Tasty Treat</h1>
         <p className="text-muted-foreground text-lg">Handcrafted confections for every occasion</p>
       </div>
 

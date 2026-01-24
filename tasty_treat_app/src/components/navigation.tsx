@@ -20,7 +20,7 @@ export default function Navigation() {
     <nav className="bg-accent text-accent-foreground shadow-md">
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">🎂 Artisan Cakes</h1>
+          <h1 className="text-2xl font-bold"></h1>
           <div className="flex gap-6 items-center">
             {navLinks.map((link) => (
               <Link
