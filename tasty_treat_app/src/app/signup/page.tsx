@@ -35,6 +35,8 @@ export default function SignupPage() {
     // Mock registration - replace with real backend call
     setTimeout(() => {
       localStorage.setItem("userToken", "true")
+      // Trigger storage event for navigation update
+      window.dispatchEvent(new Event("storage"))
       toast({
         title: "Account created!",
         description: "Welcome to Tasty Treat!",

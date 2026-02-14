@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,7 @@ export default function AdminLogin() {
   const router = useRouter()
   const { toast } = useToast()
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
     console.log("[v0] Login attempt with:", email)
@@ -23,6 +23,8 @@ export default function AdminLogin() {
     // Mock authentication - replace with real backend call
     if (email === "admin@artisancakes.com" && password === "admin123") {
       localStorage.setItem("adminToken", "true")
+      // Trigger storage event for navigation update
+      window.dispatchEvent(new Event("storage"))
       console.log("[v0] Login successful, redirecting to admin")
       toast({
         title: "Success",

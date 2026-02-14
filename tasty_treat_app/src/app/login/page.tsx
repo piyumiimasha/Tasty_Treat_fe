@@ -24,6 +24,8 @@ export default function LoginPage() {
     setTimeout(() => {
       if (email && password) {
         localStorage.setItem("userToken", "true")
+        // Trigger storage event for navigation update
+        window.dispatchEvent(new Event("storage"))
         toast({
           title: "Welcome back!",
           description: "You've successfully logged in.",

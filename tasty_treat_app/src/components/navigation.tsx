@@ -1,11 +1,35 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { ShoppingCart } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { ShoppingCart, LogOut, LogIn } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
 
 export default function Navigation() {
   const pathname = usePathname()
+  const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const userToken = localStorage.getItem("userToken")
+      const adminToken = localStorage.getItem("adminToken")
+      setIsAuthenticated(!!(userToken || adminToken))
+    }
+    
+    checkAuth()
+    // Listen for storage changes (in case of login in another tab)
+    window.addEventListener("storage", checkAuth)
+    return () => window.removeEventListener("storage", checkAuth)
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem("userToken")
+    localStorage.removeItem("adminToken")
+    setIsAuthenticated(false)
+    router.push("/login")
+  }
 
   const navLinks = [
     { href: "/", label: "Browse Cakes" },
@@ -54,6 +78,30 @@ export default function Navigation() {
                   {link.label}
                 </Link>
               ))}
+            </div>
+            <div className="ml-4 border-l border-accent-foreground/30 pl-6">
+              {isAuthenticated ? (
+                <Button
+                  onClick={handleLogout}
+                  variant="ghost"
+                  size="sm"
+                  className="text-accent-foreground hover:text-white hover:bg-accent-foreground/10"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
+              ) : (
+                <Link href="/login">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-accent-foreground hover:text-white hover:bg-accent-foreground/10"
+                  >
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Login
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
