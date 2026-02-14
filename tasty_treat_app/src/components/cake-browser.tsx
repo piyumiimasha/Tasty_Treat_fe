@@ -12,7 +12,7 @@ const CAKES_DATA = [
     name: "Classic Wedding Elegance",
     category: "Wedding Cakes",
     price: 250,
-    size: "6-8 servings",
+    size: "2 kg",
     flavor: "Vanilla Bean & Champagne",
     dietary: ["vegan"],
     rating: 4.9,
@@ -24,7 +24,7 @@ const CAKES_DATA = [
     name: "Rainbow Birthday Delight",
     category: "Birthday Cakes",
     price: 85,
-    size: "4-6 servings",
+    size: "1 kg",
     flavor: "Chocolate & Strawberry",
     dietary: ["gluten-free"],
     rating: 4.8,
@@ -48,7 +48,7 @@ const CAKES_DATA = [
     name: "Decadent Chocolate Torte",
     category: "Desserts",
     price: 45,
-    size: "8 servings",
+    size: "1 kg",
     flavor: "Dark Chocolate",
     dietary: [],
     rating: 4.9,
@@ -60,7 +60,7 @@ const CAKES_DATA = [
     name: "Modern Geometric Wedding",
     category: "Wedding Cakes",
     price: 320,
-    size: "10-12 servings",
+    size: "2 kg",
     flavor: "Lemon & Lavender",
     dietary: ["vegan"],
     rating: 4.6,
@@ -84,7 +84,7 @@ const CAKES_DATA = [
     name: "Strawberry Shortcake",
     category: "Desserts",
     price: 55,
-    size: "8 servings",
+    size: "1 kg",
     flavor: "Strawberry & Cream",
     dietary: ["vegan"],
     rating: 4.9,
@@ -96,7 +96,7 @@ const CAKES_DATA = [
     name: "Custom Anniversary Cake",
     category: "Custom Designs",
     price: 200,
-    size: "6-8 servings",
+    size: "1.5 kg",
     flavor: "Personalized",
     dietary: ["vegan", "gluten-free"],
     rating: 5.0,
@@ -109,8 +109,6 @@ export default function CakeBrowser() {
   const [selectedCategory, setSelectedCategory] = useState("All Cakes")
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500])
   const [selectedFlavors, setSelectedFlavors] = useState<string[]>([])
-  const [selectedDietary, setSelectedDietary] = useState<string[]>([])
-  const [selectedSize, setSelectedSize] = useState<string[]>([])
 
   // Filter cakes based on all criteria
   const filteredCakes = useMemo(() => {
@@ -119,14 +117,10 @@ export default function CakeBrowser() {
       const priceMatch = cake.price >= priceRange[0] && cake.price <= priceRange[1]
       const flavorMatch =
         selectedFlavors.length === 0 || selectedFlavors.some((f) => cake.flavor.toLowerCase().includes(f.toLowerCase()))
-      const dietaryMatch =
-        selectedDietary.length === 0 ||
-        selectedDietary.every((d) => cake.dietary.includes(d.toLowerCase().replace(/-/g, "-")))
-      const sizeMatch = selectedSize.length === 0 || selectedSize.includes(cake.size)
 
-      return categoryMatch && priceMatch && flavorMatch && dietaryMatch && sizeMatch
+      return categoryMatch && priceMatch && flavorMatch
     })
-  }, [selectedCategory, priceRange, selectedFlavors, selectedDietary, selectedSize])
+  }, [selectedCategory, priceRange, selectedFlavors])
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-background">
@@ -165,10 +159,6 @@ export default function CakeBrowser() {
             setPriceRange={setPriceRange}
             selectedFlavors={selectedFlavors}
             setSelectedFlavors={setSelectedFlavors}
-            selectedDietary={selectedDietary}
-            setSelectedDietary={setSelectedDietary}
-            selectedSize={selectedSize}
-            setSelectedSize={setSelectedSize}
           />
         </aside>
 

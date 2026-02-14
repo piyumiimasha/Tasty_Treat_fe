@@ -154,7 +154,7 @@ export default function OrdersPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-semibold text-primary">${order.price}</p>
+                    <p className="text-2xl font-semibold text-primary">Rs. {order.price}</p>
                     <p className="text-sm text-muted-foreground mt-1">
                       {expandedOrder === order.id ? "Click to collapse" : "Click to expand"}
                     </p>

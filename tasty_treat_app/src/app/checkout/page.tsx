@@ -240,22 +240,22 @@ export default function CheckoutPage() {
               <div className="space-y-3 mb-4 border-b border-border pb-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Elegant Wedding Cake</span>
-                  <span className="font-semibold">$85.00</span>
+                  <span className="font-semibold">Rs. 85.00</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Chocolate Birthday Cake (x2)</span>
-                  <span className="font-semibold">$90.00</span>
+                  <span className="font-semibold">Rs. 90.00</span>
                 </div>
               </div>
 
               <div className="space-y-2 mb-6">
                 <div className="flex justify-between text-foreground">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>Rs. {subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-foreground">
                   <span>Tax</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>Rs. {tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-foreground">
                   <span>Delivery</span>
@@ -266,7 +266,7 @@ export default function CheckoutPage() {
               <div className="border-t border-border pt-4 mb-6">
                 <div className="flex justify-between">
                   <span className="text-lg font-semibold text-foreground">Total</span>
-                  <span className="text-2xl font-bold text-primary">${total.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-primary">Rs. {total.toFixed(2)}</span>
                 </div>
               </div>
 

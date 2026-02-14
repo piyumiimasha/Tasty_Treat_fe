@@ -132,7 +132,7 @@ export default function DesignerOptions() {
                       <div>
                         <p className="font-medium text-foreground">{item.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          +${item.price.toFixed(2)} • {item.visualMetadata.layer} layer
+                          +Rs. {item.price.toFixed(2)} • {item.visualMetadata.layer} layer
                         </p>
                       </div>
                     </div>
@@ -173,7 +173,7 @@ export default function DesignerOptions() {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Additional Price ($)</label>
+                      <label className="text-sm font-medium">Additional Price (Rs.)</label>
                       <Input
                         type="number"
                         placeholder="0.00"

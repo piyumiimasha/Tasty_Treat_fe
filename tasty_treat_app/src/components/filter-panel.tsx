@@ -9,31 +9,19 @@ interface FilterPanelProps {
   setPriceRange: (range: [number, number]) => void
   selectedFlavors: string[]
   setSelectedFlavors: (flavors: string[]) => void
-  selectedDietary: string[]
-  setSelectedDietary: (dietary: string[]) => void
-  selectedSize: string[]
-  setSelectedSize: (size: string[]) => void
 }
 
 const FLAVORS = ["Vanilla", "Chocolate", "Strawberry", "Lemon", "Carrot", "Red Velvet"]
-const DIETARY_OPTIONS = ["Vegan", "Gluten-Free", "Dairy-Free", "Nut-Free"]
-const SIZES = ["4-6 servings", "6-8 servings", "8-10 servings", "10-12 servings"]
 
 export default function FilterPanel({
   priceRange,
   setPriceRange,
   selectedFlavors,
   setSelectedFlavors,
-  selectedDietary,
-  setSelectedDietary,
-  selectedSize,
-  setSelectedSize,
 }: FilterPanelProps) {
   const [expandedSections, setExpandedSections] = useState({
     price: true,
     flavor: true,
-    dietary: true,
-    size: true,
   })
 
   const toggleSection = (section: keyof typeof expandedSections) => {
@@ -47,16 +35,6 @@ export default function FilterPanel({
     setSelectedFlavors(
       selectedFlavors.includes(flavor) ? selectedFlavors.filter((f) => f !== flavor) : [...selectedFlavors, flavor],
     )
-  }
-
-  const toggleDietary = (option: string) => {
-    setSelectedDietary(
-      selectedDietary.includes(option) ? selectedDietary.filter((d) => d !== option) : [...selectedDietary, option],
-    )
-  }
-
-  const toggleSize = (size: string) => {
-    setSelectedSize(selectedSize.includes(size) ? selectedSize.filter((s) => s !== size) : [...selectedSize, size])
   }
 
   return (
@@ -91,8 +69,8 @@ export default function FilterPanel({
               className="w-full"
             />
             <div className="flex items-center justify-between text-sm">
-              <span>${priceRange[0]}</span>
-              <span>${priceRange[1]}</span>
+              <span>Rs. {priceRange[0]}</span>
+              <span>Rs. {priceRange[1]}</span>
             </div>
           </div>
         )}
@@ -124,65 +102,11 @@ export default function FilterPanel({
         )}
       </div>
 
-      {/* Dietary Filter */}
-      <div className="border-b border-border pb-6">
-        <button
-          onClick={() => toggleSection("dietary")}
-          className="flex items-center justify-between w-full mb-4 hover:text-primary transition-colors"
-        >
-          <h3 className="font-medium">Dietary</h3>
-          <ChevronDown className={`w-4 h-4 transition-transform ${expandedSections.dietary ? "" : "-rotate-90"}`} />
-        </button>
-        {expandedSections.dietary && (
-          <div className="space-y-3">
-            {DIETARY_OPTIONS.map((option) => (
-              <label key={option} className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedDietary.includes(option)}
-                  onChange={() => toggleDietary(option)}
-                  className="rounded border-border"
-                />
-                <span className="text-sm">{option}</span>
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Size Filter */}
-      <div className="pb-6">
-        <button
-          onClick={() => toggleSection("size")}
-          className="flex items-center justify-between w-full mb-4 hover:text-primary transition-colors"
-        >
-          <h3 className="font-medium">Size</h3>
-          <ChevronDown className={`w-4 h-4 transition-transform ${expandedSections.size ? "" : "-rotate-90"}`} />
-        </button>
-        {expandedSections.size && (
-          <div className="space-y-3">
-            {SIZES.map((size) => (
-              <label key={size} className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedSize.includes(size)}
-                  onChange={() => toggleSize(size)}
-                  className="rounded border-border"
-                />
-                <span className="text-sm">{size}</span>
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Reset Filters */}
       <Button
         onClick={() => {
           setPriceRange([0, 500])
           setSelectedFlavors([])
-          setSelectedDietary([])
-          setSelectedSize([])
         }}
         variant="outline"
         className="w-full"

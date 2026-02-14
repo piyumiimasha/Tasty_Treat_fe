@@ -105,7 +105,7 @@ export default function CartPage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-bold text-foreground mb-4">${(item.price * item.quantity).toFixed(2)}</p>
+                  <p className="text-xl font-bold text-foreground mb-4">Rs. {(item.price * item.quantity).toFixed(2)}</p>
                   <button
                     onClick={() => removeItem(item.id)}
                     className="text-destructive hover:bg-destructive/10 p-2 rounded-md transition"
@@ -125,11 +125,11 @@ export default function CartPage() {
               <div className="space-y-4 mb-6 border-b border-border pb-6">
                 <div className="flex justify-between text-foreground">
                   <span>Subtotal</span>
-                  <span className="font-semibold">${subtotal.toFixed(2)}</span>
+                  <span className="font-semibold">Rs. {subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Tax (10%)</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>Rs. {tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Delivery</span>
@@ -139,7 +139,7 @@ export default function CartPage() {
 
               <div className="flex justify-between items-center mb-6">
                 <span className="text-lg font-semibold text-foreground">Total</span>
-                <span className="text-2xl font-bold text-primary">${total.toFixed(2)}</span>
+                <span className="text-2xl font-bold text-primary">Rs. {total.toFixed(2)}</span>
               </div>
 
               <Link href="/checkout" className="block">

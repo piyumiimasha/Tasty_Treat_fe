@@ -2,6 +2,10 @@
 
 import { X, ChevronLeft, ChevronRight, Heart, ShoppingCart } from "lucide-react"
 import { useState } from "react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+const WEIGHT_OPTIONS = ["0.5 kg", "1 kg", "1.5 kg", "2 kg", "2.5 kg", "3 kg"]
+const FLAVOR_OPTIONS = ["Vanilla", "Chocolate", "Strawberry", "Red Velvet", "Lemon", "Carrot"]
 
 interface Cake {
   id: number
@@ -25,6 +29,8 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isFavorited, setIsFavorited] = useState(false)
   const [quantity, setQuantity] = useState(1)
+  const [selectedWeight, setSelectedWeight] = useState(cake.size)
+  const [selectedFlavor, setSelectedFlavor] = useState(cake.flavor.split(" ")[0] || "Vanilla")
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % cake.images.length)
@@ -106,38 +112,61 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
                 {cake.category}
               </div>
               <div className="flex items-end gap-4 mb-2">
-                <h3 className="text-4xl font-bold text-primary">${cake.price}</h3>
+                <h3 className="text-4xl font-bold text-primary">Rs. {cake.price}</h3>
               </div>
               <p className="text-muted-foreground">{cake.flavor}</p>
             </div>
 
             {/* Rating */}
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <span key={i} className={`text-2xl ${i < Math.floor(cake.rating) ? "⭐" : "☆"}`} />
-                ))}
-              </div>
-              <span className="text-lg font-semibold text-primary">{cake.rating}</span>
+            <div className="flex gap-1">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <span key={i} className={`text-2xl ${i < Math.floor(cake.rating) ? "⭐" : "☆"}`} />
+              ))}
             </div>
 
-            {/* Size and Details */}
-            <div className="space-y-3 pb-6 border-b border-border">
+            {/* Flavor and Weight Selection */}
+            <div className="space-y-4 pb-6 border-b border-border">
+              {/* Flavor Dropdown */}
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Serving Size</p>
-                <p className="font-semibold">{cake.size}</p>
+                <label className="text-sm font-medium mb-2 block">Flavor</label>
+                <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FLAVOR_OPTIONS.map((flavor) => (
+                      <SelectItem key={flavor} value={flavor}>
+                        {flavor}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {cake.dietary.length > 0 && (
+              {/* Weight Dropdown - Only show for non-cupcake items */}
+              {!cake.size.includes("pieces") && (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">Dietary Options</p>
-                  <div className="flex flex-wrap gap-2">
-                    {cake.dietary.map((tag) => (
-                      <span key={tag} className="px-3 py-1 bg-accent/20 text-accent text-sm rounded-full">
-                        {tag.charAt(0).toUpperCase() + tag.slice(1)}
-                      </span>
-                    ))}
-                  </div>
+                  <label className="text-sm font-medium mb-2 block">Weight</label>
+                  <Select value={selectedWeight} onValueChange={setSelectedWeight}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {WEIGHT_OPTIONS.map((weight) => (
+                        <SelectItem key={weight} value={weight}>
+                          {weight}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Pieces display for cupcakes */}
+              {cake.size.includes("pieces") && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Quantity</p>
+                  <p className="text-muted-foreground">{cake.size}</p>
                 </div>
               )}
             </div>

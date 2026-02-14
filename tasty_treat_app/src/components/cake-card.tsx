@@ -58,36 +58,22 @@ export default function CakeCard({ cake, onClick }: CakeCardProps) {
       <div className="p-4">
         <h3 className="font-semibold text-primary text-lg mb-1 line-clamp-2">{cake.name}</h3>
 
-        <div className="flex items-center gap-1 mb-3">
-          <div className="flex items-center">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star
-                key={i}
-                className={`w-4 h-4 ${i < Math.floor(cake.rating) ? "fill-accent text-accent" : "text-muted"}`}
-              />
-            ))}
-          </div>
-          <span className="text-sm text-muted-foreground ml-1">({cake.rating})</span>
+        <div className="flex items-center mb-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star
+              key={i}
+              className={`w-4 h-4 ${i < Math.floor(cake.rating) ? "fill-accent text-accent" : "text-muted"}`}
+            />
+          ))}
         </div>
 
         <p className="text-sm text-muted-foreground mb-3">{cake.flavor}</p>
-
-        {/* Dietary Tags */}
-        {cake.dietary.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {cake.dietary.map((tag) => (
-              <span key={tag} className="text-xs px-2 py-1 rounded-full bg-accent/20 text-accent">
-                {tag.charAt(0).toUpperCase() + tag.slice(1)}
-              </span>
-            ))}
-          </div>
-        )}
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-3 border-t border-border">
           <div>
             <p className="text-sm text-muted-foreground">{cake.size}</p>
-            <p className="text-lg font-bold text-primary">${cake.price}</p>
+            <p className="text-lg font-bold text-primary">Rs. {cake.price}</p>
           </div>
           <button className="px-3 py-2 bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity text-sm font-medium">
             View

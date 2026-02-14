@@ -50,7 +50,7 @@ export default function IngredientPicker({
           >
             <span>{option.label}</span>
             <div className="flex items-center gap-2">
-              {option.price > 0 && <span className="text-xs font-semibold">+${option.price}</span>}
+              {option.price > 0 && <span className="text-xs font-semibold">+Rs. {option.price}</span>}
               {selected.includes(option.id) && <Check className="h-4 w-4" />}
             </div>
           </Button>

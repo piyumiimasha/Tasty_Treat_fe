@@ -83,30 +83,30 @@ export default function PriceCalculator({ options }: PriceCalculatorProps) {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Base Size:</span>
-            <span className="font-medium">${pricing.basePrice.toFixed(2)}</span>
+            <span className="font-medium">Rs. {pricing.basePrice.toFixed(2)}</span>
           </div>
           {pricing.layerSurcharge > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Extra Layers:</span>
-              <span className="font-medium">+${pricing.layerSurcharge.toFixed(2)}</span>
+              <span className="font-medium">+Rs. {pricing.layerSurcharge.toFixed(2)}</span>
             </div>
           )}
           {pricing.ingredientPrice > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Flavors & Fillings:</span>
-              <span className="font-medium">+${pricing.ingredientPrice.toFixed(2)}</span>
+              <span className="font-medium">+Rs. {pricing.ingredientPrice.toFixed(2)}</span>
             </div>
           )}
           {pricing.dietaryPrice > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Dietary Options:</span>
-              <span className="font-medium">+${pricing.dietaryPrice.toFixed(2)}</span>
+              <span className="font-medium">+Rs. {pricing.dietaryPrice.toFixed(2)}</span>
             </div>
           )}
           {pricing.topperPrice > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Toppers & Decor:</span>
-              <span className="font-medium">+${pricing.topperPrice.toFixed(2)}</span>
+              <span className="font-medium">+Rs. {pricing.topperPrice.toFixed(2)}</span>
             </div>
           )}
         </div>
@@ -114,18 +114,18 @@ export default function PriceCalculator({ options }: PriceCalculatorProps) {
         <div className="border-t border-border pt-3 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Subtotal:</span>
-            <span>${pricing.subtotal.toFixed(2)}</span>
+            <span>Rs. {pricing.subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Tax (10%):</span>
-            <span>${pricing.tax.toFixed(2)}</span>
+            <span>Rs. {pricing.tax.toFixed(2)}</span>
           </div>
         </div>
 
         <div className="border-t border-border pt-3">
           <div className="flex justify-between">
             <span className="font-semibold">Total:</span>
-            <span className="text-xl font-bold text-primary">${pricing.total.toFixed(2)}</span>
+            <span className="text-xl font-bold text-primary">Rs. {pricing.total.toFixed(2)}</span>
           </div>
         </div>
 
