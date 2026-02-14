@@ -44,7 +44,7 @@ export default function Navigation() {
     { href: "/orders", label: "Track Order" },
   ]
 
-  const adminLinks = [{ href: "/admin", label: "Admin Dashboard" }]
+  const isAdmin = userInfo?.role?.toLowerCase() === "admin"
 
   return (
     <nav className="bg-accent text-accent-foreground shadow-md">
@@ -72,19 +72,18 @@ export default function Navigation() {
               <ShoppingCart className="w-5 h-5" />
               <span>Cart</span>
             </Link>
-            <div className="ml-4 border-l border-accent-foreground/30 pl-6">
-              {adminLinks.map((link) => (
+            {isAdmin && (
+              <div className="ml-4 border-l border-accent-foreground/30 pl-6">
                 <Link
-                  key={link.href}
-                  href={link.href}
+                  href="/admin"
                   className={`font-medium transition-colors ${
-                    pathname.startsWith(link.href) ? "text-white border-b-2 border-white pb-1" : "hover:text-white"
+                    pathname.startsWith("/admin") ? "text-white border-b-2 border-white pb-1" : "hover:text-white"
                   }`}
                 >
-                  {link.label}
+                  Admin Dashboard
                 </Link>
-              ))}
-            </div>
+              </div>
+            )}
             <div className="ml-4 border-l border-accent-foreground/30 pl-6">
               {isLoggedIn ? (
                 <div className="flex items-center gap-3">

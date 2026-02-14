@@ -162,3 +162,15 @@ export function isTokenExpired(token: string): boolean {
   const currentTime = Date.now() / 1000;
   return decoded.exp < currentTime;
 }
+
+// Check if current user is an admin
+export function isAdmin(): boolean {
+  const userInfo = getUserInfo();
+  return userInfo?.role?.toLowerCase() === 'admin';
+}
+
+// Check if current user has a specific role
+export function hasRole(role: string): boolean {
+  const userInfo = getUserInfo();
+  return userInfo?.role?.toLowerCase() === role.toLowerCase();
+}
