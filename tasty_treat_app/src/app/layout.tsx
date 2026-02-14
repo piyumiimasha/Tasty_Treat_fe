@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import Navigation from "@/components/navigation"
+import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className={`font-sans antialiased`}>
         <Navigation />
         {children}
+        <Toaster />
       </body>
     </html>
   )
