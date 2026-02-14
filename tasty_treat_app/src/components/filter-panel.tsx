@@ -3,6 +3,7 @@
 import { ChevronDown } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider"
 
 interface FilterPanelProps {
   priceRange: [number, number]
@@ -51,21 +52,13 @@ export default function FilterPanel({
           <ChevronDown className={`w-4 h-4 transition-transform ${expandedSections.price ? "" : "-rotate-90"}`} />
         </button>
         {expandedSections.price && (
-          <div className="space-y-4">
-            <input
-              type="range"
-              min="0"
-              max="500"
-              value={priceRange[0]}
-              onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
-              className="w-full"
-            />
-            <input
-              type="range"
-              min="0"
-              max="500"
-              value={priceRange[1]}
-              onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
+          <div className="space-y-3">
+            <Slider
+              min={0}
+              max={500}
+              step={5}
+              value={priceRange}
+              onValueChange={(value) => setPriceRange(value as [number, number])}
               className="w-full"
             />
             <div className="flex items-center justify-between text-sm">
