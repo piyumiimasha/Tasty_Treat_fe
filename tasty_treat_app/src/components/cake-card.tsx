@@ -9,7 +9,6 @@ interface Cake {
   price: number
   size: string
   flavor: string
-  dietary: string[]
   rating: number
   images: string[]
   videos: string[]

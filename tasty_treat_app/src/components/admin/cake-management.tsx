@@ -21,7 +21,6 @@ const INITIAL_CAKES = [
     price: 250,
     size: "2 kg",
     flavor: "Vanilla Bean & Champagne",
-    dietary: ["vegan"],
     rating: 4.9,
     images: ["/elegant-white-wedding-cake.jpg"],
   },
@@ -32,7 +31,6 @@ const INITIAL_CAKES = [
     price: 85,
     size: "1 kg",
     flavor: "Chocolate & Strawberry",
-    dietary: ["gluten-free"],
     rating: 4.8,
     images: ["/colorful-rainbow-birthday-cake.jpg"],
   },
@@ -43,14 +41,12 @@ const INITIAL_CAKES = [
     price: 35,
     size: "12 pieces",
     flavor: "Red Velvet",
-    dietary: ["vegan", "gluten-free"],
     rating: 4.7,
     images: ["/red-velvet-cupcakes-with-cream-frosting.jpg"],
   },
 ]
 
 const CATEGORIES = ["Wedding Cakes", "Birthday Cakes", "Cupcakes", "Desserts", "Custom Designs"]
-const DIETARY_OPTIONS = ["vegan", "gluten-free", "sugar-free", "organic"]
 
 interface Cake {
   id: number
@@ -59,7 +55,6 @@ interface Cake {
   price: number
   size: string
   flavor: string
-  dietary: string[]
   rating: number
   images: string[]
 }
@@ -79,7 +74,6 @@ export default function CakeManagement() {
     price: 0,
     size: "",
     flavor: "",
-    dietary: [] as string[],
     images: "",
   })
 
@@ -90,7 +84,6 @@ export default function CakeManagement() {
       price: 0,
       size: "",
       flavor: "",
-      dietary: [],
       images: "",
     })
   }
@@ -112,7 +105,6 @@ export default function CakeManagement() {
       price: formData.price,
       size: formData.size,
       flavor: formData.flavor,
-      dietary: formData.dietary,
       rating: 0,
       images: formData.images ? formData.images.split(",").map((img) => img.trim()) : [],
     }
@@ -145,7 +137,6 @@ export default function CakeManagement() {
             price: formData.price,
             size: formData.size,
             flavor: formData.flavor,
-            dietary: formData.dietary,
             images: formData.images ? formData.images.split(",").map((img) => img.trim()) : cake.images,
           }
         : cake
@@ -177,20 +168,12 @@ export default function CakeManagement() {
       price: cake.price,
       size: cake.size,
       flavor: cake.flavor,
-      dietary: cake.dietary,
       images: cake.images.join(", "),
     })
     setIsEditDialogOpen(true)
   }
 
-  const toggleDietary = (option: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      dietary: prev.dietary.includes(option)
-        ? prev.dietary.filter((d) => d !== option)
-        : [...prev.dietary, option],
-    }))
-  }
+
 
   const filteredCakes = cakes.filter(
     (cake) =>
@@ -261,26 +244,6 @@ export default function CakeManagement() {
       </div>
 
       <div>
-        <Label>Dietary Options</Label>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {DIETARY_OPTIONS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => toggleDietary(option)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                formData.dietary.includes(option)
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground hover:bg-muted"
-              }`}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
         <Label htmlFor="images">Image URLs (comma-separated)</Label>
         <Textarea
           id="images"
@@ -347,14 +310,13 @@ export default function CakeManagement() {
                   <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Price</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Size</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Flavor</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Dietary</th>
                   <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {filteredCakes.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                       No cakes found
                     </td>
                   </tr>
@@ -366,18 +328,6 @@ export default function CakeManagement() {
                       <td className="px-4 py-3 text-sm">${cake.price}</td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{cake.size}</td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{cake.flavor}</td>
-                      <td className="px-4 py-3 text-sm">
-                        <div className="flex flex-wrap gap-1">
-                          {cake.dietary.map((d) => (
-                            <span
-                              key={d}
-                              className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary"
-                            >
-                              {d}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-2">
                           <Button

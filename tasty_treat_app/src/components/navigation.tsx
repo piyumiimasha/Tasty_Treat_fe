@@ -2,10 +2,18 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { ShoppingCart, LogOut, LogIn, User } from "lucide-react"
+import { ShoppingCart, LogOut, LogIn, User, ChevronDown } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { isAuthenticated, getUserInfo, logout, type UserInfo } from "@/lib/api/auth"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function Navigation() {
   const pathname = usePathname()
@@ -86,28 +94,39 @@ export default function Navigation() {
             )}
             <div className="ml-4 border-l border-accent-foreground/30 pl-6">
               {isLoggedIn ? (
-                <div className="flex items-center gap-3">
-                  {userInfo && (
-                    <div className="flex items-center gap-2 px-3 py-1 bg-accent-foreground/10 rounded-md">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-accent-foreground hover:text-white hover:bg-accent-foreground/10 gap-2"
+                    >
                       <User className="w-4 h-4" />
-                      <span className="text-sm font-medium">{userInfo.name}</span>
-                      {userInfo.role && (
-                        <span className="text-xs bg-primary/20 px-2 py-0.5 rounded">
-                          {userInfo.role}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  <Button
-                    onClick={handleLogout}
-                    variant="ghost"
-                    size="sm"
-                    className="text-accent-foreground hover:text-white hover:bg-accent-foreground/10"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
-                  </Button>
-                </div>
+                      <ChevronDown className="w-3 h-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">{userInfo?.name}</p>
+                        <p className="text-xs text-muted-foreground">{userInfo?.email}</p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                      <User className="w-4 h-4 mr-2" />
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <Link href="/login">
                   <Button
