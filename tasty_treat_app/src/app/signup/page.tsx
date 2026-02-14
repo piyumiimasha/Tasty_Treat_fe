@@ -8,12 +8,15 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { Separator } from "@/components/ui/separator"
+import { register, setAuthData, ApiError } from "@/lib/api/auth"
 
 export default function SignupPage() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [phoneNo, setPhoneNo] = useState("")
+  const [address, setAddress] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
@@ -32,17 +35,41 @@ export default function SignupPage() {
 
     setIsLoading(true)
 
-    // Mock registration - replace with real backend call
-    setTimeout(() => {
-      localStorage.setItem("userToken", "true")
-      // Trigger storage event for navigation update
-      window.dispatchEvent(new Event("storage"))
-      toast({
-        title: "Account created!",
-        description: "Welcome to Tasty Treat!",
+    try {
+      const response = await register({
+        name,
+        email,
+        password,
+        role: "Customer",
+        phoneNo: phoneNo || undefined,
+        address: address || undefined,
       })
+      
+      // Store authentication data
+      setAuthData(response)
+      
+      toast({
+        title: `Welcome, ${response.name}!`,
+        description: "Your account has been created successfully.",
+      })
+      
       router.push("/")
-    }, 1000)
+    } catch (error) {
+      if (error instanceof ApiError) {
+        toast({
+          title: "Registration Failed",
+          description: error.message,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
+          variant: "destructive",
+        })
+      }
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -98,6 +125,26 @@ export default function SignupPage() {
                 required
                 disabled={isLoading}
                 minLength={6}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Phone Number (Optional)</label>
+              <Input
+                type="tel"
+                placeholder="+1 (555) 123-4567"
+                value={phoneNo}
+                onChange={(e) => setPhoneNo(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Address (Optional)</label>
+              <Input
+                type="text"
+                placeholder="123 Main St, City, State"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             <Button type="submit" disabled={isLoading} className="w-full">

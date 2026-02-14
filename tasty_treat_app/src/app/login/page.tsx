@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { Separator } from "@/components/ui/separator"
+import { login, setAuthData, ApiError } from "@/lib/api/auth"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -20,26 +21,39 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
 
-    // Mock authentication - replace with real backend call
-    setTimeout(() => {
-      if (email && password) {
-        localStorage.setItem("userToken", "true")
-        // Trigger storage event for navigation update
-        window.dispatchEvent(new Event("storage"))
-        toast({
-          title: "Welcome back!",
-          description: "You've successfully logged in.",
-        })
+    try {
+      const response = await login({ email, password })
+      
+      // Store authentication data
+      setAuthData(response)
+      
+      toast({
+        title: `Welcome back, ${response.name}!`,
+        description: "You've successfully logged in.",
+      })
+      
+      // Redirect based on role
+      if (response.role.toLowerCase() === "admin") {
+        router.push("/admin")
+      } else {
         router.push("/")
+      }
+    } catch (error) {
+      if (error instanceof ApiError) {
+        toast({
+          title: "Login Failed",
+          description: error.message,
+          variant: "destructive",
+        })
       } else {
         toast({
           title: "Error",
-          description: "Invalid email or password",
+          description: "An unexpected error occurred. Please try again.",
           variant: "destructive",
         })
-        setIsLoading(false)
       }
-    }, 1000)
+      setIsLoading(false)
+    }
   }
 
   return (

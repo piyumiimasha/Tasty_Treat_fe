@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
+import { login, setAuthData, ApiError } from "@/lib/api/auth"
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("")
@@ -18,28 +19,44 @@ export default function AdminLogin() {
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    console.log("[v0] Login attempt with:", email)
 
-    // Mock authentication - replace with real backend call
-    if (email === "admin@artisancakes.com" && password === "admin123") {
-      localStorage.setItem("adminToken", "true")
-      // Trigger storage event for navigation update
-      window.dispatchEvent(new Event("storage"))
-      console.log("[v0] Login successful, redirecting to admin")
+    try {
+      const response = await login({ email, password })
+      
+      // Check if user has admin role
+      if (response.role.toLowerCase() !== "admin") {
+        toast({
+          title: "Access Denied",
+          description: "You don't have admin privileges.",
+          variant: "destructive",
+        })
+        setIsLoading(false)
+        return
+      }
+      
+      // Store authentication data
+      setAuthData(response)
+      
       toast({
-        title: "Success",
-        description: "Logged in successfully",
+        title: `Welcome, ${response.name}!`,
+        description: "Logged in successfully as admin.",
       })
-      setTimeout(() => {
-        router.push("/admin")
-      }, 100)
-    } else {
-      console.log("[v0] Login failed - invalid credentials")
-      toast({
-        title: "Error",
-        description: "Invalid credentials",
-        variant: "destructive",
-      })
+      
+      router.push("/admin")
+    } catch (error) {
+      if (error instanceof ApiError) {
+        toast({
+          title: "Login Failed",
+          description: error.message,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
+          variant: "destructive",
+        })
+      }
       setIsLoading(false)
     }
   }
@@ -73,7 +90,6 @@ export default function AdminLogin() {
                 required
               />
             </div>
-            <p className="text-xs text-muted-foreground">Demo credentials: admin@artisancakes.com / admin123</p>
             <Button type="submit" disabled={isLoading} className="w-full">
               {isLoading ? "Logging in..." : "Login"}
             </Button>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
+import { getAuthToken, isTokenExpired, logout } from "@/lib/api/auth"
 
 const PUBLIC_ROUTES = ["/", "/login", "/signup", "/forgot-password"]
 
@@ -13,15 +14,29 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkAuth = () => {
       const isPublicRoute = PUBLIC_ROUTES.includes(pathname) || pathname.startsWith("/icon")
-      const userToken = localStorage.getItem("userToken")
-      const adminToken = localStorage.getItem("adminToken")
-      const isAuthenticated = userToken || adminToken
-
-      if (!isPublicRoute && !isAuthenticated) {
-        router.push("/login")
-      } else {
+      
+      if (isPublicRoute) {
         setIsChecking(false)
+        return
       }
+
+      const token = getAuthToken()
+      
+      // Check if user has a token
+      if (!token) {
+        router.push("/login")
+        return
+      }
+
+      // Check if token is expired
+      if (isTokenExpired(token)) {
+        logout() // Clear expired token
+        router.push("/login")
+        return
+      }
+
+      // User is authenticated with valid token
+      setIsChecking(false)
     }
 
     checkAuth()
@@ -42,3 +57,4 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>
 }
+
