@@ -19,7 +19,7 @@ export class CakeRenderer {
       layers.push({
         id: "base",
         type: "base",
-        visualProperties: baseOption.visualMetadata,
+        visualProperties: {},
         order: 0,
       })
     }
@@ -30,7 +30,6 @@ export class CakeRenderer {
         id: `layer-${i}`,
         type: "base",
         visualProperties: {
-          ...baseOption?.visualMetadata,
           opacity: 1 - i * 0.1,
           transform: `translateY(${i * 70}px)`,
         },
@@ -45,7 +44,6 @@ export class CakeRenderer {
         id: "icing",
         type: "icing",
         visualProperties: {
-          ...frostingOption.visualMetadata,
           color: this.designState.icingColor,
         },
         order: 100,
@@ -59,7 +57,7 @@ export class CakeRenderer {
         layers.push({
           id: `filling-${idx}`,
           type: "filling",
-          visualProperties: fillingOption.visualMetadata,
+          visualProperties: {},
           order: 50 + idx,
         })
       }
@@ -72,7 +70,7 @@ export class CakeRenderer {
         layers.push({
           id: `topper-${idx}`,
           type: "topper",
-          visualProperties: topperOption.visualMetadata,
+          visualProperties: {},
           order: 200 + idx,
         })
       }

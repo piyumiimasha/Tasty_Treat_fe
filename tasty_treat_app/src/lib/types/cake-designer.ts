@@ -1,17 +1,8 @@
-export interface VisualMetadata {
-  type: "color" | "image" | "texture" | "effect" | "shape"
-  layer: "base" | "icing" | "topper" | "filling" | "decoration"
-  value: string
-  imageUrl?: string
-  effectConfig?: Record<string, any>
-}
-
 export interface DesignerOption {
   id: string | number
   category: "shapes" | "layers" | "frosting" | "colors" | "toppers" | "decorations"
   name: string
   price: number
-  visualMetadata: VisualMetadata
   compatible?: {
     maxLayers?: number
     excludeShapes?: string[]

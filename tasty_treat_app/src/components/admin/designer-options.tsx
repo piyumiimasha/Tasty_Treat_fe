@@ -21,35 +21,30 @@ const mockDesignerOptions: DesignerOption[] = [
     category: "shapes",
     name: "Round",
     price: 0,
-    visualMetadata: { type: "shape", layer: "base", value: "circle" },
   },
   {
     id: "square",
     category: "shapes",
     name: "Square",
     price: 5,
-    visualMetadata: { type: "shape", layer: "base", value: "square" },
   },
   {
     id: "buttercream",
     category: "frosting",
     name: "Buttercream",
     price: 0,
-    visualMetadata: { type: "color", layer: "icing", value: "#FFF8DC" },
   },
   {
     id: "ganache",
     category: "frosting",
     name: "Ganache",
     price: 12,
-    visualMetadata: { type: "color", layer: "icing", value: "#3D2817", effect: "glossy" },
   },
   {
     id: "gold-drip",
     category: "toppers",
     name: "Gold Drip",
     price: 15,
-    visualMetadata: { type: "effect", layer: "icing", value: "drip", color: "#FFD700" },
     compatible: { maxLayers: 5 },
   },
   {
@@ -57,7 +52,6 @@ const mockDesignerOptions: DesignerOption[] = [
     category: "toppers",
     name: "Fresh Flowers",
     price: 8,
-    visualMetadata: { type: "image", layer: "topper", value: "🌸" },
   },
 ]
 
@@ -66,9 +60,6 @@ export default function DesignerOptions() {
   const [newItemName, setNewItemName] = useState("")
   const [newItemPrice, setNewItemPrice] = useState("")
   const [newItemCategory, setNewItemCategory] = useState("toppers")
-  const [newItemColor, setNewItemColor] = useState("#FFD700")
-  const [newItemEffect, setNewItemEffect] = useState("")
-  const [newItemValue, setNewItemValue] = useState("")
 
   const deleteItem = (optionId: string | number) => {
     setOptions(options.filter((opt) => opt.id !== optionId))
@@ -82,20 +73,11 @@ export default function DesignerOptions() {
       category: newItemCategory as any,
       name: newItemName,
       price: Number.parseFloat(newItemPrice),
-      visualMetadata: {
-        type: newItemEffect ? "effect" : "color",
-        layer: "topper",
-        value: newItemValue || newItemColor,
-        effectConfig: newItemEffect ? { effect: newItemEffect } : undefined,
-      },
     }
 
     setOptions([...options, newOption])
     setNewItemName("")
     setNewItemPrice("")
-    setNewItemColor("#FFD700")
-    setNewItemEffect("")
-    setNewItemValue("")
   }
 
   const categories = ["shapes", "layers", "frosting", "colors", "toppers", "decorations"]
@@ -109,7 +91,7 @@ export default function DesignerOptions() {
       <CardHeader>
         <CardTitle>Cake Designer Options</CardTitle>
         <CardDescription>
-          Manage options with visual metadata - changes automatically update the preview
+          Manage cake customization options and pricing
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -123,16 +105,10 @@ export default function DesignerOptions() {
                 {group.items.map((item) => (
                   <div key={item.id} className="flex items-center justify-between rounded bg-muted p-3">
                     <div className="flex items-center gap-3">
-                      <div
-                        className="h-6 w-6 rounded"
-                        style={{
-                          backgroundColor: item.visualMetadata.type === "color" ? item.visualMetadata.value : "#E5E7EB",
-                        }}
-                      />
                       <div>
                         <p className="font-medium text-foreground">{item.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          +Rs. {item.price.toFixed(2)} • {item.visualMetadata.layer} layer
+                          +Rs. {item.price.toFixed(2)}
                         </p>
                       </div>
                     </div>
@@ -160,7 +136,7 @@ export default function DesignerOptions() {
                   <DialogHeader>
                     <DialogTitle>Add {group.category} Option</DialogTitle>
                     <DialogDescription>
-                      Define the option name, price, and visual properties it will render with
+                      Define the option name and additional price
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
@@ -179,68 +155,6 @@ export default function DesignerOptions() {
                         placeholder="0.00"
                         value={newItemPrice}
                         onChange={(e) => setNewItemPrice(e.target.value)}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium">Visual Type</label>
-                      <select
-                        className="w-full rounded border border-input bg-background px-3 py-2"
-                        value={newItemColor ? "color" : "effect"}
-                        onChange={(e) => {
-                          if (e.target.value === "color") setNewItemEffect("")
-                          else setNewItemColor("")
-                        }}
-                      >
-                        <option value="color">Color</option>
-                        <option value="effect">Effect</option>
-                      </select>
-                    </div>
-
-                    {!newItemEffect && (
-                      <div>
-                        <label className="text-sm font-medium">Color Value</label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="color"
-                            value={newItemColor}
-                            onChange={(e) => setNewItemColor(e.target.value)}
-                            className="w-12 h-10 p-1"
-                          />
-                          <Input
-                            placeholder="#FFD700"
-                            value={newItemColor}
-                            onChange={(e) => setNewItemColor(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {newItemEffect && (
-                      <>
-                        <div>
-                          <label className="text-sm font-medium">Effect Type</label>
-                          <select className="w-full rounded border border-input bg-background px-3 py-2">
-                            <option>drip</option>
-                            <option>glossy</option>
-                            <option>matte</option>
-                            <option>sparkle</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Effect Color</label>
-                          <Input type="color" value={newItemColor} onChange={(e) => setNewItemColor(e.target.value)} />
-                        </div>
-                      </>
-                    )}
-
-                    <div>
-                      <label className="text-sm font-medium">Display Value (Icon/Emoji)</label>
-                      <Input
-                        placeholder="🌸"
-                        value={newItemValue}
-                        onChange={(e) => setNewItemValue(e.target.value)}
-                        maxLength={2}
                       />
                     </div>
 
