@@ -1,118 +1,82 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import CakeGallery from "./cake-gallery"
 import FilterPanel from "./filter-panel"
+import { getAllItems, getItemsByCategory } from "@/lib/api/items"
+import { mapItemToCake, Cake } from "@/lib/mappers/item-mapper"
+import { useToast } from "@/hooks/use-toast"
 
 const CAKE_CATEGORIES = ["All Cakes", "Wedding Cakes", "Birthday Cakes", "Cupcakes", "Desserts", "Custom Designs"]
 
-const CAKES_DATA = [
-  {
-    id: 1,
-    name: "Classic Wedding Elegance",
-    category: "Wedding Cakes",
-    price: 250,
-    size: "2 kg",
-    flavor: "Vanilla Bean & Champagne",
-    rating: 4.9,
-    images: ["/elegant-white-wedding-cake.jpg", "/wedding-cake-side-view.jpg"],
-    videos: [],
-  },
-  {
-    id: 2,
-    name: "Rainbow Birthday Delight",
-    category: "Birthday Cakes",
-    price: 85,
-    size: "1 kg",
-    flavor: "Chocolate & Strawberry",
-    rating: 4.8,
-    images: ["/colorful-rainbow-birthday-cake.jpg", "/birthday-cake-top-view.jpg"],
-    videos: [],
-  },
-  {
-    id: 3,
-    name: "Velvet Cupcake Set",
-    category: "Cupcakes",
-    price: 35,
-    size: "12 pieces",
-    flavor: "Red Velvet",
-    rating: 4.7,
-    images: ["/red-velvet-cupcakes-with-cream-frosting.jpg", "/cupcake-arrangement.jpg"],
-    videos: [],
-  },
-  {
-    id: 4,
-    name: "Decadent Chocolate Torte",
-    category: "Desserts",
-    price: 45,
-    size: "1 kg",
-    flavor: "Dark Chocolate",
-    rating: 4.9,
-    images: ["/rich-dark-chocolate-cake-layers.jpg", "/chocolate-torte-cross-section.jpg"],
-    videos: [],
-  },
-  {
-    id: 5,
-    name: "Modern Geometric Wedding",
-    category: "Wedding Cakes",
-    price: 320,
-    size: "2 kg",
-    flavor: "Lemon & Lavender",
-    rating: 4.6,
-    images: ["/modern-geometric-wedding-cake-design.jpg", "/geometric-cake-detail.jpg"],
-    videos: [],
-  },
-  {
-    id: 6,
-    name: "Salted Caramel Cupcakes",
-    category: "Cupcakes",
-    price: 40,
-    size: "12 pieces",
-    flavor: "Salted Caramel",
-    rating: 4.8,
-    images: ["/salted-caramel-cupcakes-gourmet.jpg", "/caramel-cupcake-close-up.jpg"],
-    videos: [],
-  },
-  {
-    id: 7,
-    name: "Strawberry Shortcake",
-    category: "Desserts",
-    price: 55,
-    size: "1 kg",
-    flavor: "Strawberry & Cream",
-    rating: 4.9,
-    images: ["/fresh-strawberry-shortcake-cream.jpg", "/strawberry-cake-layers.jpg"],
-    videos: [],
-  },
-  {
-    id: 8,
-    name: "Custom Anniversary Cake",
-    category: "Custom Designs",
-    price: 200,
-    size: "1.5 kg",
-    flavor: "Personalized",
-    rating: 5.0,
-    images: ["/custom-anniversary-cake-design.jpg", "/personalized-cake-decoration.jpg"],
-    videos: [],
-  },
-]
-
 export default function CakeBrowser() {
+  const [allCakes, setAllCakes] = useState<Cake[]>([])
+  const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState("All Cakes")
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500])
   const [selectedFlavors, setSelectedFlavors] = useState<string[]>([])
+  const { toast } = useToast()
 
-  // Filter cakes based on all criteria
+  // Fetch all cakes on mount
+  useEffect(() => {
+    loadCakes()
+  }, [])
+
+  // Fetch cakes by category when category changes
+  useEffect(() => {
+    if (selectedCategory !== "All Cakes") {
+      loadCakesByCategory(selectedCategory)
+    } else {
+      loadCakes()
+    }
+  }, [selectedCategory])
+
+  const loadCakes = async () => {
+    try {
+      setLoading(true)
+      const items = await getAllItems()
+      const cakes = items.map(mapItemToCake)
+      setAllCakes(cakes)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load cakes. Please try again.",
+        variant: "destructive",
+      })
+      console.error("Failed to load cakes:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadCakesByCategory = async (category: string) => {
+    try {
+      setLoading(true)
+      const items = await getItemsByCategory(category)
+      const cakes = items.map(mapItemToCake)
+      setAllCakes(cakes)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to load ${category}. Please try again.`,
+        variant: "destructive",
+      })
+      console.error("Failed to load cakes by category:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Filter cakes based on price and flavor (category is already filtered by API)
   const filteredCakes = useMemo(() => {
-    return CAKES_DATA.filter((cake) => {
-      const categoryMatch = selectedCategory === "All Cakes" || cake.category === selectedCategory
+    return allCakes.filter((cake) => {
       const priceMatch = cake.price >= priceRange[0] && cake.price <= priceRange[1]
       const flavorMatch =
         selectedFlavors.length === 0 || selectedFlavors.some((f) => cake.flavor.toLowerCase().includes(f.toLowerCase()))
 
-      return categoryMatch && priceMatch && flavorMatch
+      return priceMatch && flavorMatch
     })
-  }, [selectedCategory, priceRange, selectedFlavors])
+  }, [allCakes, priceRange, selectedFlavors])
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-background">
@@ -156,12 +120,21 @@ export default function CakeBrowser() {
 
         {/* Gallery Section */}
         <div className="flex-1 px-6 lg:px-12 py-6">
-          <div className="mb-6">
-            <p className="text-sm text-muted-foreground">
-              Showing {filteredCakes.length} of {CAKES_DATA.length} cakes
-            </p>
-          </div>
-          <CakeGallery cakes={filteredCakes} />
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+              <p className="text-muted-foreground">Loading cakes...</p>
+            </div>
+          ) : (
+            <>
+              <div className="mb-6">
+                <p className="text-sm text-muted-foreground">
+                  Showing {filteredCakes.length} of {allCakes.length} cakes
+                </p>
+              </div>
+              <CakeGallery cakes={filteredCakes} />
+            </>
+          )}
         </div>
       </div>
     </div>

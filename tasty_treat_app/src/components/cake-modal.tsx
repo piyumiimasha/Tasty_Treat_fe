@@ -3,21 +3,10 @@
 import { X, ChevronLeft, ChevronRight, Heart, ShoppingCart } from "lucide-react"
 import { useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Cake } from "@/lib/mappers/item-mapper"
 
 const WEIGHT_OPTIONS = ["0.5 kg", "1 kg", "1.5 kg", "2 kg", "2.5 kg", "3 kg"]
 const FLAVOR_OPTIONS = ["Vanilla", "Chocolate", "Strawberry", "Red Velvet", "Lemon", "Carrot"]
-
-interface Cake {
-  id: number
-  name: string
-  category: string
-  price: number
-  size: string
-  flavor: string
-  rating: number
-  images: string[]
-  videos: string[]
-}
 
 interface CakeModalProps {
   cake: Cake

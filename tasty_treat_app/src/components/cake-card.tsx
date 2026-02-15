@@ -1,18 +1,7 @@
 "use client"
 import { Star, Heart } from "lucide-react"
 import { useState } from "react"
-
-interface Cake {
-  id: number
-  name: string
-  category: string
-  price: number
-  size: string
-  flavor: string
-  rating: number
-  images: string[]
-  videos: string[]
-}
+import { Cake } from "@/lib/mappers/item-mapper"
 
 interface CakeCardProps {
   cake: Cake

@@ -3,18 +3,9 @@
 import { useState } from "react"
 import CakeCard from "./cake-card"
 import CakeModal from "./cake-modal"
-
-interface Cake {
-  id: number
-  name: string
-  category: string
-  price: number
-  size: string
-  flavor: string
-  rating: number
-  images: string[]
-  videos: string[]
-}
+import { getItemById } from "@/lib/api/items"
+import { mapItemToCake, Cake } from "@/lib/mappers/item-mapper"
+import { useToast } from "@/hooks/use-toast"
 
 interface CakeGalleryProps {
   cakes: Cake[]
@@ -22,6 +13,27 @@ interface CakeGalleryProps {
 
 export default function CakeGallery({ cakes }: CakeGalleryProps) {
   const [selectedCake, setSelectedCake] = useState<Cake | null>(null)
+  const [loadingCake, setLoadingCake] = useState(false)
+  const { toast } = useToast()
+
+  const handleCakeClick = async (cake: Cake) => {
+    try {
+      setLoadingCake(true)
+      // Fetch fresh data from backend
+      const item = await getItemById(cake.id)
+      const fullCakeData = mapItemToCake(item)
+      setSelectedCake(fullCakeData)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load cake details. Please try again.",
+        variant: "destructive",
+      })
+      console.error("Failed to load cake details:", error)
+    } finally {
+      setLoadingCake(false)
+    }
+  }
 
   if (cakes.length === 0) {
     return (
@@ -36,9 +48,15 @@ export default function CakeGallery({ cakes }: CakeGalleryProps) {
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {cakes.map((cake) => (
-          <CakeCard key={cake.id} cake={cake} onClick={() => setSelectedCake(cake)} />
+          <CakeCard key={cake.id} cake={cake} onClick={() => handleCakeClick(cake)} />
         ))}
       </div>
+
+      {loadingCake && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+        </div>
+      )}
 
       {selectedCake && <CakeModal cake={selectedCake} onClose={() => setSelectedCake(null)} />}
     </>
