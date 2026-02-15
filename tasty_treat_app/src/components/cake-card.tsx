@@ -60,7 +60,9 @@ export default function CakeCard({ cake, onClick }: CakeCardProps) {
         {/* Footer */}
         <div className="flex items-center justify-between pt-3 border-t border-border">
           <div>
-            <p className="text-sm text-muted-foreground">{cake.size}</p>
+            <p className="text-sm text-muted-foreground">
+              {cake.category === "Cupcakes" ? cake.size : `Weight: ${cake.size}`}
+            </p>
             <p className="text-lg font-bold text-primary">Rs. {cake.price}</p>
           </div>
           <button className="px-3 py-2 bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity text-sm font-medium">

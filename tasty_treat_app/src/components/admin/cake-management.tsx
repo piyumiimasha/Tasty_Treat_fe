@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Edit, Trash2, Search } from "lucide-react"
+import { Plus, Edit, Trash2, Search, X } from "lucide-react"
 import { getAllItems, createItem, updateItem, deleteItem } from "@/lib/api/items"
 import { mapItemToCake, mapCakeToCreateItem, mapCakeToUpdateItem, Cake } from "@/lib/mappers/item-mapper"
 
@@ -35,6 +35,8 @@ export default function CakeManagement() {
     flavor: "",
     images: "",
   })
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [imagePreviews, setImagePreviews] = useState<string[]>([])
 
   // Load cakes on mount
   useEffect(() => {
@@ -68,6 +70,8 @@ export default function CakeManagement() {
       flavor: "",
       images: "",
     })
+    setImageFiles([])
+    setImagePreviews([])
   }
 
   const handleAddCake = async () => {
@@ -82,6 +86,18 @@ export default function CakeManagement() {
 
     try {
       setSubmitting(true)
+      // Convert image files to base64 strings
+      const imageUrls = await Promise.all(
+        imageFiles.map((file) => {
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(file)
+          })
+        })
+      )
+
       const newCake: Omit<Cake, "id"> = {
         name: formData.name,
         category: formData.category,
@@ -89,7 +105,7 @@ export default function CakeManagement() {
         size: formData.size,
         flavor: formData.flavor,
         rating: 4.5,
-        images: formData.images ? formData.images.split(",").map((img) => img.trim()) : [],
+        images: imageUrls.length > 0 ? imageUrls : [],
         videos: [],
       }
 
@@ -129,13 +145,28 @@ export default function CakeManagement() {
 
     try {
       setSubmitting(true)
+      // Convert new image files to base64 strings if any
+      let imageUrls = editingCake.images
+      if (imageFiles.length > 0) {
+        imageUrls = await Promise.all(
+          imageFiles.map((file) => {
+            return new Promise<string>((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onloadend = () => resolve(reader.result as string)
+              reader.onerror = reject
+              reader.readAsDataURL(file)
+            })
+          })
+        )
+      }
+
       const updatedCake: Partial<Cake> = {
         name: formData.name,
         category: formData.category,
         price: formData.price,
         size: formData.size,
         flavor: formData.flavor,
-        images: formData.images ? formData.images.split(",").map((img) => img.trim()) : editingCake.images,
+        images: imageUrls,
       }
 
       const updateDto = mapCakeToUpdateItem(updatedCake)
@@ -197,7 +228,25 @@ export default function CakeManagement() {
       flavor: cake.flavor,
       images: cake.images.join(", "),
     })
+    setImageFiles([])
+    setImagePreviews(cake.images)
     setIsEditDialogOpen(true)
+  }
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    setImageFiles(files)
+
+    // Create preview URLs
+    const previews = files.map((file) => URL.createObjectURL(file))
+    setImagePreviews(previews)
+  }
+
+  const removeImage = (index: number) => {
+    const newFiles = imageFiles.filter((_, i) => i !== index)
+    const newPreviews = imagePreviews.filter((_, i) => i !== index)
+    setImageFiles(newFiles)
+    setImagePreviews(newPreviews)
   }
 
   const filteredCakes = cakes.filter(
@@ -269,14 +318,35 @@ export default function CakeManagement() {
       </div>
 
       <div>
-        <Label htmlFor="images">Image URLs (comma-separated)</Label>
-        <Textarea
+        <Label htmlFor="images">Upload Images</Label>
+        <Input
           id="images"
-          placeholder="/image1.jpg, /image2.jpg"
-          rows={3}
-          value={formData.images}
-          onChange={(e) => setFormData({ ...formData, images: e.target.value })}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleImageChange}
+          className="cursor-pointer"
         />
+        {imagePreviews.length > 0 && (
+          <div className="mt-3 grid grid-cols-4 gap-2">
+            {imagePreviews.map((preview, index) => (
+              <div key={index} className="relative group">
+                <img
+                  src={preview}
+                  alt={`Preview ${index + 1}`}
+                  className="w-full h-20 object-cover rounded border"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

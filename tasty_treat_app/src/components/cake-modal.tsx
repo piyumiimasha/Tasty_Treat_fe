@@ -132,7 +132,7 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
               </div>
 
               {/* Weight Dropdown - Only show for non-cupcake items */}
-              {!cake.size.includes("pieces") && (
+              {cake.category !== "Cupcakes" && (
                 <div>
                   <label className="text-sm font-medium mb-2 block">Weight</label>
                   <Select value={selectedWeight} onValueChange={setSelectedWeight}>
@@ -151,7 +151,7 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
               )}
 
               {/* Pieces display for cupcakes */}
-              {cake.size.includes("pieces") && (
+              {cake.category === "Cupcakes" && (
                 <div>
                   <p className="text-sm font-medium mb-1">Quantity</p>
                   <p className="text-muted-foreground">{cake.size}</p>
