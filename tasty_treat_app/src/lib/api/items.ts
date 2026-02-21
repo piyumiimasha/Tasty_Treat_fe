@@ -9,6 +9,7 @@ export interface ItemDto {
   basePrice: number;
   basePriceUnit?: string;
   description?: string;
+  imageUrl?: string;
 }
 
 export interface CreateItemDto {
@@ -44,10 +45,13 @@ function getAuthToken(): string | null {
 }
 
 // Helper function to build headers
-function buildHeaders(includeAuth: boolean = false): HeadersInit {
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
+function buildHeaders(includeAuth: boolean = false, isFormData: boolean = false): HeadersInit {
+  const headers: HeadersInit = {};
+
+  // Don't set Content-Type for FormData, browser will set it with boundary
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (includeAuth) {
     const token = getAuthToken();
@@ -126,12 +130,32 @@ export async function getItemsByCategory(category: string): Promise<ItemDto[]> {
 }
 
 // Create new item (requires authentication)
-export async function createItem(data: CreateItemDto): Promise<ItemDto> {
+export async function createItem(data: CreateItemDto, imageFile?: File): Promise<ItemDto> {
   try {
+    const formData = new FormData();
+    
+    // Append item data
+    formData.append('name', data.name);
+    formData.append('category', data.category);
+    formData.append('basePrice', data.basePrice.toString());
+    
+    if (data.basePriceUnit) {
+      formData.append('basePriceUnit', data.basePriceUnit);
+    }
+    
+    if (data.description) {
+      formData.append('description', data.description);
+    }
+    
+    // Append image if provided
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+
     const response = await fetch(`${API_BASE_URL}/api/Items`, {
       method: 'POST',
-      headers: buildHeaders(true),
-      body: JSON.stringify(data),
+      headers: buildHeaders(true, true),
+      body: formData,
     });
 
     if (!response.ok) {
@@ -149,12 +173,40 @@ export async function createItem(data: CreateItemDto): Promise<ItemDto> {
 }
 
 // Update existing item (requires authentication)
-export async function updateItem(id: number, data: UpdateItemDto): Promise<ItemDto> {
+export async function updateItem(id: number, data: UpdateItemDto, imageFile?: File): Promise<ItemDto> {
   try {
+    const formData = new FormData();
+    
+    // Append only defined fields
+    if (data.name !== undefined) {
+      formData.append('name', data.name);
+    }
+    
+    if (data.category !== undefined) {
+      formData.append('category', data.category);
+    }
+    
+    if (data.basePrice !== undefined) {
+      formData.append('basePrice', data.basePrice.toString());
+    }
+    
+    if (data.basePriceUnit !== undefined) {
+      formData.append('basePriceUnit', data.basePriceUnit);
+    }
+    
+    if (data.description !== undefined) {
+      formData.append('description', data.description);
+    }
+    
+    // Append image if provided
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+
     const response = await fetch(`${API_BASE_URL}/api/Items/${id}`, {
       method: 'PUT',
-      headers: buildHeaders(true),
-      body: JSON.stringify(data),
+      headers: buildHeaders(true, true),
+      body: formData,
     });
 
     if (!response.ok) {
@@ -191,5 +243,53 @@ export async function deleteItem(id: number): Promise<boolean> {
       throw error;
     }
     throw new Error('Network error: Unable to delete item');
+  }
+}
+
+// Upload image for existing item (requires authentication)
+export async function uploadItemImage(id: number, imageFile: File): Promise<ItemDto> {
+  try {
+    const formData = new FormData();
+    formData.append('file', imageFile);
+
+    const response = await fetch(`${API_BASE_URL}/api/Items/${id}/upload-image`, {
+      method: 'POST',
+      headers: buildHeaders(true, true),
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new ApiError(response.status, errorText || 'Failed to upload image');
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new Error('Network error: Unable to upload image');
+  }
+}
+
+// Delete image from item (requires authentication)
+export async function deleteItemImage(id: number): Promise<ItemDto> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/Items/${id}/delete-image`, {
+      method: 'DELETE',
+      headers: buildHeaders(true),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new ApiError(response.status, errorText || 'Failed to delete image');
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new Error('Network error: Unable to delete image');
   }
 }

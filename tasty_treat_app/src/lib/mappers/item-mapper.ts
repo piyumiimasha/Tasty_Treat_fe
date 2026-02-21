@@ -25,6 +25,11 @@ export function mapItemToCake(item: ItemDto): Cake {
     // If description is not JSON, ignore
   }
 
+  // Use imageUrl from backend if available, otherwise check description
+  const images = item.imageUrl 
+    ? [item.imageUrl] 
+    : (additionalData.images || []);
+
   return {
     id: item.itemId,
     name: item.name,
@@ -33,19 +38,17 @@ export function mapItemToCake(item: ItemDto): Cake {
     size: item.basePriceUnit || additionalData.size || "1 kg",
     flavor: additionalData.flavor || "Custom Flavor",
     rating: additionalData.rating || 4.5,
-    images: additionalData.images || [],
+    images: images,
     videos: additionalData.videos || [],
   }
 }
 
-// Map frontend Cake to backend CreateItemDto
+// Map frontend Cake to backend CreateItemDto (without images, handled separately)
 export function mapCakeToCreateItem(cake: Omit<Cake, "id">): CreateItemDto {
-  // Store additional fields in description as JSON
+  // Store additional fields in description as JSON (excluding images)
   const additionalData = {
-    size: cake.size,
     flavor: cake.flavor,
     rating: cake.rating,
-    images: cake.images,
     videos: cake.videos,
   }
 
@@ -58,7 +61,7 @@ export function mapCakeToCreateItem(cake: Omit<Cake, "id">): CreateItemDto {
   }
 }
 
-// Map frontend Cake to backend UpdateItemDto
+// Map frontend Cake to backend UpdateItemDto (without images, handled separately)
 export function mapCakeToUpdateItem(cake: Partial<Cake>): UpdateItemDto {
   const updateDto: UpdateItemDto = {}
 
@@ -67,12 +70,10 @@ export function mapCakeToUpdateItem(cake: Partial<Cake>): UpdateItemDto {
   if (cake.price !== undefined) updateDto.basePrice = cake.price
   if (cake.size !== undefined) updateDto.basePriceUnit = cake.size
 
-  // Store additional fields in description as JSON
+  // Store additional fields in description as JSON (excluding images)
   const additionalData: any = {}
-  if (cake.size !== undefined) additionalData.size = cake.size
   if (cake.flavor !== undefined) additionalData.flavor = cake.flavor
   if (cake.rating !== undefined) additionalData.rating = cake.rating
-  if (cake.images !== undefined) additionalData.images = cake.images
   if (cake.videos !== undefined) additionalData.videos = cake.videos
 
   if (Object.keys(additionalData).length > 0) {

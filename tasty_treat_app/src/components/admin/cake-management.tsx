@@ -86,17 +86,6 @@ export default function CakeManagement() {
 
     try {
       setSubmitting(true)
-      // Convert image files to base64 strings
-      const imageUrls = await Promise.all(
-        imageFiles.map((file) => {
-          return new Promise<string>((resolve, reject) => {
-            const reader = new FileReader()
-            reader.onloadend = () => resolve(reader.result as string)
-            reader.onerror = reject
-            reader.readAsDataURL(file)
-          })
-        })
-      )
 
       const newCake: Omit<Cake, "id"> = {
         name: formData.name,
@@ -105,12 +94,15 @@ export default function CakeManagement() {
         size: formData.size,
         flavor: formData.flavor,
         rating: 4.5,
-        images: imageUrls.length > 0 ? imageUrls : [],
+        images: [],
         videos: [],
       }
 
       const createDto = mapCakeToCreateItem(newCake)
-      await createItem(createDto)
+      
+      // Pass the first image file to the API (backend only accepts one image)
+      const imageFile = imageFiles.length > 0 ? imageFiles[0] : undefined
+      await createItem(createDto, imageFile)
 
       setIsAddDialogOpen(false)
       resetForm()
@@ -145,20 +137,6 @@ export default function CakeManagement() {
 
     try {
       setSubmitting(true)
-      // Convert new image files to base64 strings if any
-      let imageUrls = editingCake.images
-      if (imageFiles.length > 0) {
-        imageUrls = await Promise.all(
-          imageFiles.map((file) => {
-            return new Promise<string>((resolve, reject) => {
-              const reader = new FileReader()
-              reader.onloadend = () => resolve(reader.result as string)
-              reader.onerror = reject
-              reader.readAsDataURL(file)
-            })
-          })
-        )
-      }
 
       const updatedCake: Partial<Cake> = {
         name: formData.name,
@@ -166,11 +144,13 @@ export default function CakeManagement() {
         price: formData.price,
         size: formData.size,
         flavor: formData.flavor,
-        images: imageUrls,
       }
 
       const updateDto = mapCakeToUpdateItem(updatedCake)
-      await updateItem(editingCake.id, updateDto)
+      
+      // Pass the first image file to the API (backend only accepts one image)
+      const imageFile = imageFiles.length > 0 ? imageFiles[0] : undefined
+      await updateItem(editingCake.id, updateDto, imageFile)
 
       setIsEditDialogOpen(false)
       setEditingCake(null)
@@ -229,24 +209,29 @@ export default function CakeManagement() {
       images: cake.images.join(", "),
     })
     setImageFiles([])
-    setImagePreviews(cake.images)
+    // Show existing image from cake
+    setImagePreviews(cake.images.length > 0 ? [cake.images[0]] : [])
     setIsEditDialogOpen(true)
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    setImageFiles(files)
+    const file = e.target.files?.[0]
+    if (!file) {
+      setImageFiles([])
+      setImagePreviews([])
+      return
+    }
 
-    // Create preview URLs
-    const previews = files.map((file) => URL.createObjectURL(file))
-    setImagePreviews(previews)
+    setImageFiles([file])
+    
+    // Create preview URL
+    const preview = URL.createObjectURL(file)
+    setImagePreviews([preview])
   }
 
   const removeImage = (index: number) => {
-    const newFiles = imageFiles.filter((_, i) => i !== index)
-    const newPreviews = imagePreviews.filter((_, i) => i !== index)
-    setImageFiles(newFiles)
-    setImagePreviews(newPreviews)
+    setImageFiles([])
+    setImagePreviews([])
   }
 
   const filteredCakes = cakes.filter(
@@ -318,33 +303,31 @@ export default function CakeManagement() {
       </div>
 
       <div>
-        <Label htmlFor="images">Upload Images</Label>
+        <Label htmlFor="images">Upload Image</Label>
         <Input
           id="images"
           type="file"
           accept="image/*"
-          multiple
           onChange={handleImageChange}
           className="cursor-pointer"
         />
+        <p className="text-xs text-muted-foreground mt-1">Accepted formats: JPG, PNG, GIF, WEBP (max 5MB)</p>
         {imagePreviews.length > 0 && (
-          <div className="mt-3 grid grid-cols-4 gap-2">
-            {imagePreviews.map((preview, index) => (
-              <div key={index} className="relative group">
-                <img
-                  src={preview}
-                  alt={`Preview ${index + 1}`}
-                  className="w-full h-20 object-cover rounded border"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImage(index)}
-                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
+          <div className="mt-3">
+            <div className="relative group inline-block">
+              <img
+                src={imagePreviews[0]}
+                alt="Preview"
+                className="w-40 h-40 object-cover rounded border"
+              />
+              <button
+                type="button"
+                onClick={() => removeImage(0)}
+                className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           </div>
         )}
       </div>
