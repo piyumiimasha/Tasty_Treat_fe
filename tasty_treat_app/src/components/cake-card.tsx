@@ -85,18 +85,13 @@ export default function CakeCard({ cake, onClick }: CakeCardProps) {
         <p className="text-sm text-muted-foreground line-clamp-1 mb-3">{cake.flavor}</p>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-border/60">
-          <div>
-            <p className="text-xs text-muted-foreground mb-0.5">
-              {cake.category === "Cupcakes" ? cake.size : `Weight: ${cake.size}`}
-            </p>
-            <p className="text-xl font-bold text-primary">
-              Rs. {cake.price.toLocaleString()}
-            </p>
-          </div>
-          <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center shadow-sm group-hover:bg-primary transition-colors">
-            <Eye className="w-4 h-4 text-white" />
-          </div>
+        <div className="pt-3 border-t border-border/60">
+          <p className="text-xs text-muted-foreground mb-0.5">
+            {cake.category === "Cupcakes" ? cake.size : `Weight: ${cake.size}`}
+          </p>
+          <p className="text-xl font-bold text-primary">
+            Rs. {cake.price.toLocaleString()}
+          </p>
         </div>
       </div>
     </div>

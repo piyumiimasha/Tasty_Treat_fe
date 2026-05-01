@@ -30,8 +30,10 @@ export default function CakeBrowser() {
   const [searchQuery, setSearchQuery]           = useState("")
   const [activeSlide, setActiveSlide]           = useState(0)
   const [filterOpen, setFilterOpen]             = useState(false)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const { toast }   = useToast()
+  const intervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
+  const galleryRef   = useRef<HTMLDivElement>(null)
+  const isFirstRender = useRef(true)
+  const { toast }    = useToast()
 
   /* ── hero auto-advance ── */
   useEffect(() => {
@@ -99,6 +101,15 @@ export default function CakeBrowser() {
   useEffect(() => {
     window.dispatchEvent(new CustomEvent("filter-count", { detail: activeFilterCount }))
   }, [activeFilterCount])
+
+  /* scroll to gallery when search or filters change (skip initial mount) */
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+    galleryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }, [searchQuery, selectedFlavors, priceRange, selectedCategory])
 
   const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat)
@@ -276,7 +287,7 @@ export default function CakeBrowser() {
       {/* ═══════════════════════════════════
           Gallery
       ═══════════════════════════════════ */}
-      <div className="flex-1 w-full max-w-7xl mx-auto px-6 lg:px-12 py-8">
+      <div ref={galleryRef} className="flex-1 w-full max-w-7xl mx-auto px-6 lg:px-12 py-8">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-28 gap-4">
             <div className="relative w-12 h-12">
