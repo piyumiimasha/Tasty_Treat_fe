@@ -4,6 +4,7 @@ import { Playfair_Display, Lato } from "next/font/google"
 import Navigation from "@/components/navigation"
 import AuthGuard from "@/components/auth-guard"
 import { Toaster } from "@/components/ui/toaster"
+// @ts-ignore: Cannot find module or type declarations for side-effect import of './globals.css'.
 import "./globals.css"
 
 const _playfair = Playfair_Display({

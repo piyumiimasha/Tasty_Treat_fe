@@ -1,12 +1,16 @@
 "use client"
 
 import { X, ChevronLeft, ChevronRight, Heart, ShoppingCart, Star } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Cake } from "@/lib/mappers/item-mapper"
+import { ItemFlavourDto, getFlavoursByItem } from "@/lib/api/item-flavours"
 
-const WEIGHT_OPTIONS = ["0.5 kg", "1 kg", "1.5 kg", "2 kg", "2.5 kg", "3 kg"]
-const FLAVOR_OPTIONS = ["Vanilla", "Chocolate", "Strawberry", "Red Velvet", "Lemon", "Carrot"]
+
+function parseKg(weightStr: string): number {
+  const num = parseFloat(weightStr)
+  return isNaN(num) ? 1 : num
+}
 
 interface CakeModalProps {
   cake: Cake
@@ -18,7 +22,30 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
   const [isFavorited, setIsFavorited] = useState(false)
   const [quantity, setQuantity] = useState(1)
   const [selectedWeight, setSelectedWeight] = useState(cake.size)
-  const [selectedFlavor, setSelectedFlavor] = useState(cake.flavor.split(" ")[0] || "Vanilla")
+  const [flavours, setFlavours] = useState<ItemFlavourDto[]>([])
+  const [selectedFlavourId, setSelectedFlavourId] = useState<string>("base")
+
+  useEffect(() => {
+    getFlavoursByItem(cake.id).then((data) => {
+      setFlavours(data)
+    }).catch(() => {
+      setFlavours([])
+    })
+  }, [cake.id])
+
+  const selectedFlavour = selectedFlavourId === "base"
+    ? null
+    : flavours.find((f) => String(f.itemFlavourId) === selectedFlavourId)
+
+  const calculatedPrice = useMemo(() => {
+    const baseWeight = parseKg(cake.size)
+    const chosenWeight = parseKg(selectedWeight)
+    const weightPrice = baseWeight > 0 ? (cake.price / baseWeight) * chosenWeight : cake.price
+    const flavourExtra = selectedFlavour ? selectedFlavour.extraPrice : 0
+    return Math.round((weightPrice + flavourExtra) * 100) / 100
+  }, [cake.price, cake.size, selectedWeight, selectedFlavour])
+
+  const totalPrice = Math.round(calculatedPrice * quantity * 100) / 100
 
   const nextImage = () => setCurrentImageIndex((prev) => (prev + 1) % cake.images.length)
   const prevImage = () => setCurrentImageIndex((prev) => (prev - 1 + cake.images.length) % cake.images.length)
@@ -128,26 +155,37 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
                 <span className="text-sm text-muted-foreground ml-2">({cake.rating} / 5)</span>
               </div>
               <div className="flex items-end gap-3">
-                <h3 className="text-4xl font-bold text-primary font-serif">Rs. {cake.price.toLocaleString()}</h3>
+                <h3 className="text-4xl font-bold text-primary font-serif">Rs. {calculatedPrice.toLocaleString()}</h3>
               </div>
-              <p className="text-muted-foreground mt-1 text-sm">{cake.flavor}</p>
+              <p className="text-muted-foreground mt-1 text-xs">
+                Base: Rs. {cake.price.toLocaleString()} / {cake.size}
+                {selectedFlavour && selectedFlavour.extraPrice > 0
+                  ? <span className="ml-2 text-accent">+Rs. {selectedFlavour.extraPrice} ({selectedFlavour.name})</span>
+                  : selectedFlavourId === "base" && <span className="ml-2">· {cake.flavor}</span>
+                }
+              </p>
             </div>
 
             {/* Flavor & Weight */}
             <div className="space-y-3 pb-5 border-b border-border/60">
-              <div>
-                <label className="text-sm font-semibold text-foreground mb-1.5 block">Flavor</label>
-                <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
-                  <SelectTrigger className="w-full rounded-xl border-border/70 bg-secondary/40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    {FLAVOR_OPTIONS.map((flavor) => (
-                      <SelectItem key={flavor} value={flavor}>{flavor}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {cake.flavor && (
+                <div>
+                  <label className="text-sm font-semibold text-foreground mb-1.5 block">Flavor</label>
+                  <Select value={selectedFlavourId} onValueChange={setSelectedFlavourId}>
+                    <SelectTrigger className="w-full rounded-xl border-border/70 bg-secondary/40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="base">{cake.flavor}</SelectItem>
+                      {flavours.map((f) => (
+                        <SelectItem key={f.itemFlavourId} value={String(f.itemFlavourId)}>
+                          {f.name}{f.extraPrice > 0 ? ` (+Rs. ${f.extraPrice})` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {cake.category !== "Cupcakes" ? (
                 <div>
@@ -157,7 +195,7 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      {WEIGHT_OPTIONS.map((weight) => (
+                      {[cake.size, ...["0.5 kg", "1 kg", "1.5 kg", "2 kg", "2.5 kg", "3 kg"].filter((w) => w !== cake.size)].map((weight) => (
                         <SelectItem key={weight} value={weight}>{weight}</SelectItem>
                       ))}
                     </SelectContent>
@@ -205,7 +243,7 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
 
               <button className="w-full py-3.5 bg-accent text-white rounded-xl font-semibold hover:bg-accent/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md shadow-accent/25">
                 <ShoppingCart className="w-5 h-5" />
-                Add to Cart — Rs. {(cake.price * quantity).toLocaleString()}
+                Add to Cart — Rs. {totalPrice.toLocaleString()}
               </button>
 
               <button

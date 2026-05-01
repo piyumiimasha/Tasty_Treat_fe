@@ -10,9 +10,10 @@ import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Edit, Trash2, Search, X } from "lucide-react"
+import { Plus, Edit, Trash2, Search, X, UtensilsCrossed } from "lucide-react"
 import { getAllItems, createItem, updateItem, deleteItem } from "@/lib/api/items"
 import { mapItemToCake, mapCakeToCreateItem, mapCakeToUpdateItem, Cake } from "@/lib/mappers/item-mapper"
+import FlavourConfigDialog from "@/components/admin/flavour-config-dialog"
 
 const CATEGORIES = ["Wedding Cakes", "Birthday Cakes", "Cupcakes", "Desserts", "Custom Designs"]
 
@@ -24,6 +25,7 @@ export default function CakeManagement() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingCake, setEditingCake] = useState<Cake | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [flavourDialogCake, setFlavourDialogCake] = useState<Cake | null>(null)
   const { toast } = useToast()
 
   // Form state
@@ -390,13 +392,14 @@ export default function CakeManagement() {
                   <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Price</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Size</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Flavor</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-muted-foreground">Flavours</th>
                   <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center">
+                    <td colSpan={7} className="px-4 py-8 text-center">
                       <div className="flex justify-center items-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                       </div>
@@ -404,7 +407,7 @@ export default function CakeManagement() {
                   </tr>
                 ) : filteredCakes.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                       No cakes found
                     </td>
                   </tr>
@@ -416,6 +419,17 @@ export default function CakeManagement() {
                       <td className="px-4 py-3 text-sm">Rs. {cake.price}</td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{cake.size}</td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{cake.flavor}</td>
+                      <td className="px-4 py-3 text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setFlavourDialogCake(cake)}
+                          className="h-8 w-8 p-0 text-accent hover:text-accent"
+                          title="Configure flavours"
+                        >
+                          <UtensilsCrossed className="h-4 w-4" />
+                        </Button>
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -463,6 +477,16 @@ export default function CakeManagement() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Flavour Config Dialog */}
+      {flavourDialogCake && (
+        <FlavourConfigDialog
+          open={!!flavourDialogCake}
+          onOpenChange={(open) => { if (!open) setFlavourDialogCake(null) }}
+          cakeId={flavourDialogCake.id}
+          cakeName={flavourDialogCake.name}
+        />
+      )}
     </div>
   )
 }
