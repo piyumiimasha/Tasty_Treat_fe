@@ -1,18 +1,28 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Playfair_Display, Lato } from "next/font/google"
 import Navigation from "@/components/navigation"
 import AuthGuard from "@/components/auth-guard"
 import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
-const _geist = Geist({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
+const _playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+  display: "swap",
+})
+
+const _lato = Lato({
+  subsets: ["latin"],
+  weight: ["300", "400", "700"],
+  variable: "--font-lato",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
-  title: "Tasty Treat",
+  title: "Tasty Treat — Artisan Cake Boutique",
   description:
-    "Browse, customize, and order exquisite handcrafted cakes for every occasion. Wedding cakes, birthday cakes, cupcakes with dietary options.",
+    "Browse, customize, and order exquisite handcrafted cakes for every occasion. Wedding cakes, birthday cakes, cupcakes and more.",
 }
 
 export default function RootLayout({
@@ -22,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`font-sans antialiased`}>
+      <body className={`${_playfair.variable} ${_lato.variable} font-sans antialiased`}>
         <Navigation />
         <AuthGuard>{children}</AuthGuard>
         <Toaster />

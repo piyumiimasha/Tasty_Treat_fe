@@ -2,36 +2,14 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Trash2, Plus, Minus, ShoppingCart } from "lucide-react"
+import { Trash2, Plus, Minus, ShoppingCart, ArrowRight, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: "Elegant Wedding Cake",
-      image: "/white-wedding-cake.jpg",
-      price: 85,
-      quantity: 1,
-      size: "10 inches",
-    },
-    {
-      id: 2,
-      name: "Chocolate Birthday Cake",
-      image: "/chocolate-birthday-cake.jpg",
-      price: 45,
-      quantity: 2,
-      size: "8 inches",
-    },
-    {
-      id: 3,
-      name: "Vegan Cupcakes (6-Pack)",
-      image: "/vegan-cupcakes.jpg",
-      price: 25,
-      quantity: 1,
-      size: "Standard",
-    },
+    { id: 1, name: "Elegant Wedding Cake", image: "/white-wedding-cake.jpg", price: 85, quantity: 1, size: "10 inches" },
+    { id: 2, name: "Chocolate Birthday Cake", image: "/chocolate-birthday-cake.jpg", price: 45, quantity: 2, size: "8 inches" },
+    { id: 3, name: "Vegan Cupcakes (6-Pack)", image: "/vegan-cupcakes.jpg", price: 25, quantity: 1, size: "Standard" },
   ])
 
   const updateQuantity = (id: number, quantity: number) => {
@@ -52,18 +30,20 @@ export default function CartPage() {
 
   if (cartItems.length === 0) {
     return (
-      <main className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 py-16">
-          <div className="flex flex-col items-center justify-center text-center py-20">
-            <ShoppingCart className="w-16 h-16 text-muted-foreground mb-4" />
-            <h1 className="text-3xl font-serif font-bold text-foreground mb-2">Your Cart is Empty</h1>
-            <p className="text-muted-foreground mb-8">
-              Browse our collection of exquisite cakes and add items to get started.
-            </p>
-            <Link href="/">
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">Continue Shopping</Button>
-            </Link>
+      <main className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="text-center py-20 max-w-md">
+          <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
+            <ShoppingCart className="w-9 h-9 text-muted-foreground" />
           </div>
+          <h1 className="font-serif text-3xl font-bold text-primary mb-3">Your Cart is Empty</h1>
+          <p className="text-muted-foreground mb-8 leading-relaxed">
+            Browse our collection of exquisite cakes and add something delicious.
+          </p>
+          <Link href="/">
+            <Button className="rounded-full px-8 bg-accent hover:bg-accent/90 text-white shadow-md shadow-accent/25">
+              Browse Cakes
+            </Button>
+          </Link>
         </div>
       </main>
     )
@@ -71,89 +51,124 @@ export default function CartPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-4xl font-serif font-bold text-foreground mb-2">Shopping Cart</h1>
-        <p className="text-muted-foreground mb-8">{cartItems.length} item(s) in your cart</p>
+      {/* Header */}
+      <div className="w-full bg-gradient-to-r from-secondary/50 to-background border-b border-border">
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <h1 className="font-serif text-4xl font-bold text-primary mb-1">Shopping Cart</h1>
+          <p className="text-muted-foreground">{cartItems.length} item{cartItems.length !== 1 ? "s" : ""} in your cart</p>
+        </div>
+      </div>
 
+      <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
             {cartItems.map((item) => (
-              <Card key={item.id} className="p-6 flex gap-6">
-                <img
-                  src={item.image || "/placeholder.svg"}
-                  alt={item.name}
-                  className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
-                />
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-foreground">{item.name}</h3>
+              <div
+                key={item.id}
+                className="flex gap-5 p-5 bg-card rounded-2xl border border-border/60 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-muted">
+                  <img
+                    src={item.image || "/placeholder.svg"}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg" }}
+                  />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-serif font-semibold text-foreground text-lg leading-tight mb-0.5">{item.name}</h3>
                   <p className="text-sm text-muted-foreground mb-3">Size: {item.size}</p>
+
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      className="p-1 hover:bg-muted rounded-md transition"
+                      className="w-8 h-8 rounded-full border border-border hover:bg-muted flex items-center justify-center transition-colors"
                     >
-                      <Minus className="w-4 h-4" />
+                      <Minus className="w-3 h-3" />
                     </button>
-                    <span className="w-8 text-center font-semibold">{item.quantity}</span>
+                    <span className="w-8 text-center font-bold text-foreground">{item.quantity}</span>
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="p-1 hover:bg-muted rounded-md transition"
+                      className="w-8 h-8 rounded-full border border-border hover:bg-muted flex items-center justify-center transition-colors"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3 h-3" />
                     </button>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xl font-bold text-foreground mb-4">Rs. {(item.price * item.quantity).toFixed(2)}</p>
+
+                <div className="flex flex-col items-end justify-between">
+                  <p className="text-xl font-bold text-primary font-serif">
+                    Rs. {(item.price * item.quantity).toLocaleString()}
+                  </p>
                   <button
                     onClick={() => removeItem(item.id)}
-                    className="text-destructive hover:bg-destructive/10 p-2 rounded-md transition"
+                    className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
-              </Card>
+              </div>
             ))}
+
+            <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
+              <Package className="w-4 h-4" />
+              <span>All cakes are freshly made and delivered within 2–3 business days.</span>
+            </div>
           </div>
 
           {/* Order Summary */}
           <div className="lg:col-span-1">
-            <Card className="p-6 sticky top-24 bg-card border-border">
-              <h2 className="text-2xl font-serif font-bold text-foreground mb-6">Order Summary</h2>
+            <div className="bg-card rounded-2xl border border-border/60 p-6 sticky top-24 shadow-sm">
+              <h2 className="font-serif text-2xl font-bold text-primary mb-6">Order Summary</h2>
 
-              <div className="space-y-4 mb-6 border-b border-border pb-6">
-                <div className="flex justify-between text-foreground">
+              <div className="space-y-3 pb-5 border-b border-border/60 mb-5">
+                {cartItems.map((item) => (
+                  <div key={item.id} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground line-clamp-1 flex-1 mr-2">
+                      {item.name} ×{item.quantity}
+                    </span>
+                    <span className="font-medium text-foreground flex-shrink-0">
+                      Rs. {(item.price * item.quantity).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-2.5 pb-5 border-b border-border/60 mb-5">
+                <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Subtotal</span>
-                  <span className="font-semibold">Rs. {subtotal.toFixed(2)}</span>
+                  <span className="font-medium text-foreground">Rs. {subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-muted-foreground">
+                <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Tax (10%)</span>
                   <span>Rs. {tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Delivery</span>
-                  <span>Free</span>
+                  <span className="text-green-600 font-medium">Free</span>
                 </div>
               </div>
 
               <div className="flex justify-between items-center mb-6">
-                <span className="text-lg font-semibold text-foreground">Total</span>
-                <span className="text-2xl font-bold text-primary">Rs. {total.toFixed(2)}</span>
+                <span className="text-base font-semibold text-foreground">Total</span>
+                <span className="text-2xl font-bold text-primary font-serif">Rs. {total.toFixed(2)}</span>
               </div>
 
               <Link href="/checkout" className="block">
-                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-6 text-lg">
+                <Button className="w-full h-12 rounded-xl bg-accent hover:bg-accent/90 text-white font-semibold shadow-md shadow-accent/25 gap-2">
                   Proceed to Checkout
+                  <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
 
               <Link href="/" className="block mt-3">
-                <Button variant="outline" className="w-full bg-transparent">
+                <Button variant="outline" className="w-full rounded-xl border-border/70 text-muted-foreground hover:text-foreground">
                   Continue Shopping
                 </Button>
               </Link>
-            </Card>
+            </div>
           </div>
         </div>
       </div>

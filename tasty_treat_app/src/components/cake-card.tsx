@@ -1,5 +1,6 @@
 "use client"
-import { Star, Heart } from "lucide-react"
+
+import { Star, Heart, Eye } from "lucide-react"
 import { useState } from "react"
 import { Cake } from "@/lib/mappers/item-mapper"
 
@@ -10,64 +11,92 @@ interface CakeCardProps {
 
 export default function CakeCard({ cake, onClick }: CakeCardProps) {
   const [isFavorited, setIsFavorited] = useState(false)
-  const [imageError, setImageError] = useState(false)
 
   return (
     <div
       onClick={onClick}
-      className="group cursor-pointer rounded-lg overflow-hidden bg-card shadow-sm hover:shadow-lg transition-shadow duration-300"
+      className="group cursor-pointer rounded-2xl overflow-hidden bg-card border border-border/60 shadow-sm hover:shadow-xl hover:shadow-primary/8 hover:-translate-y-1 transition-all duration-300"
     >
-      {/* Image Container */}
-      <div className="relative h-80 bg-muted overflow-hidden">
+      {/* Image */}
+      <div className="relative h-72 bg-muted overflow-hidden">
         <img
           src={cake.images[0] || "/placeholder.svg"}
           alt={cake.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
+          style={{ transform: undefined }}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = "/placeholder.svg"
+          }}
         />
 
-        {/* Favorite Button */}
+        {/* Gradient overlay on hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        {/* Favorite */}
         <button
           onClick={(e) => {
             e.stopPropagation()
             setIsFavorited(!isFavorited)
           }}
-          className="absolute top-3 right-3 p-2 rounded-full bg-background/80 hover:bg-background transition-colors backdrop-blur-sm"
+          className="absolute top-3 right-3 p-2 rounded-full bg-white/90 hover:bg-white shadow-sm backdrop-blur-sm transition-all hover:scale-110"
         >
-          <Heart className={`w-5 h-5 ${isFavorited ? "fill-destructive text-destructive" : "text-foreground"}`} />
+          <Heart
+            className={`w-4 h-4 transition-colors ${
+              isFavorited ? "fill-rose-500 text-rose-500" : "text-muted-foreground"
+            }`}
+          />
         </button>
 
-        {/* Category Badge */}
-        <div className="absolute top-3 left-3 px-3 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-full">
+        {/* Category badge */}
+        <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 text-primary text-xs font-semibold rounded-full backdrop-blur-sm shadow-sm">
           {cake.category}
+        </div>
+
+        {/* Quick view on hover */}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+          <div className="flex items-center gap-1.5 px-4 py-2 bg-white/95 backdrop-blur-sm rounded-full text-primary text-sm font-medium shadow-lg">
+            <Eye className="w-4 h-4" />
+            Quick View
+          </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="p-4">
-        <h3 className="font-semibold text-primary text-lg mb-1 line-clamp-2">{cake.name}</h3>
+        <h3 className="font-serif font-semibold text-foreground text-lg mb-1.5 line-clamp-1 group-hover:text-accent transition-colors">
+          {cake.name}
+        </h3>
 
-        <div className="flex items-center mb-3">
+        {/* Stars */}
+        <div className="flex items-center gap-0.5 mb-2">
           {Array.from({ length: 5 }).map((_, i) => (
             <Star
               key={i}
-              className={`w-4 h-4 ${i < Math.floor(cake.rating) ? "fill-accent text-accent" : "text-muted"}`}
+              className={`w-3.5 h-3.5 ${
+                i < Math.floor(cake.rating)
+                  ? "fill-amber-400 text-amber-400"
+                  : "text-border"
+              }`}
             />
           ))}
+          <span className="text-xs text-muted-foreground ml-1">({cake.rating})</span>
         </div>
 
-        <p className="text-sm text-muted-foreground mb-3">{cake.flavor}</p>
+        <p className="text-sm text-muted-foreground line-clamp-1 mb-3">{cake.flavor}</p>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-border">
+        <div className="flex items-center justify-between pt-3 border-t border-border/60">
           <div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground mb-0.5">
               {cake.category === "Cupcakes" ? cake.size : `Weight: ${cake.size}`}
             </p>
-            <p className="text-lg font-bold text-primary">Rs. {cake.price}</p>
+            <p className="text-xl font-bold text-primary">
+              Rs. {cake.price.toLocaleString()}
+            </p>
           </div>
-          <button className="px-3 py-2 bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity text-sm font-medium">
-            View
-          </button>
+          <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center shadow-sm group-hover:bg-primary transition-colors">
+            <Eye className="w-4 h-4 text-white" />
+          </div>
         </div>
       </div>
     </div>
