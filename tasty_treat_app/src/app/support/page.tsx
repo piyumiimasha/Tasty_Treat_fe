@@ -52,6 +52,7 @@ function AdminChat({ adminId }: { adminId: number }) {
   const [sending, setSending] = useState(false)
   const [search, setSearch] = useState("")
   const messagesRef = useRef<HTMLDivElement>(null)
+  const shouldAutoScroll = useRef(true)
 
   const loadUsers = useCallback(async () => {
     try {
@@ -75,20 +76,33 @@ function AdminChat({ adminId }: { adminId: number }) {
 
   useEffect(() => {
     if (!selectedUser) return
+    shouldAutoScroll.current = true
     loadMessages(selectedUser.userId)
     const id = setInterval(() => loadMessages(selectedUser.userId), 3000)
     return () => clearInterval(id)
   }, [selectedUser, loadMessages])
 
+  // Track whether user is near the bottom so we know when to auto-scroll
   useEffect(() => {
     const el = messagesRef.current
-    if (el) el.scrollTop = el.scrollHeight
+    if (!el) return
+    const onScroll = () => {
+      shouldAutoScroll.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+    }
+    el.addEventListener("scroll", onScroll)
+    return () => el.removeEventListener("scroll", onScroll)
+  }, [selectedUser])
+
+  useEffect(() => {
+    const el = messagesRef.current
+    if (el && shouldAutoScroll.current) el.scrollTop = el.scrollHeight
   }, [messages])
 
   const handleSend = async () => {
     if (!input.trim() || !selectedUser) return
     try {
       setSending(true)
+      shouldAutoScroll.current = true
       const msg = await sendMessage(adminId, input.trim(), selectedUser.userId)
       setMessages((prev) => [...prev, msg])
       setInput("")
@@ -241,11 +255,12 @@ function AdminChat({ adminId }: { adminId: number }) {
 
 // ─── User view ───────────────────────────────────────────────────────────────
 
-function UserChat({ userId, userName }: { userId: number; userName: string }) {
+function UserChat({ userId }: { userId: number }) {
   const [messages, setMessages] = useState<ChatMsgDto[]>([])
   const [input, setInput] = useState("")
   const [sending, setSending] = useState(false)
   const messagesRef = useRef<HTMLDivElement>(null)
+  const shouldAutoScroll = useRef(true)
 
   const loadMessages = useCallback(async () => {
     try {
@@ -262,13 +277,24 @@ function UserChat({ userId, userName }: { userId: number; userName: string }) {
 
   useEffect(() => {
     const el = messagesRef.current
-    if (el) el.scrollTop = el.scrollHeight
+    if (!el) return
+    const onScroll = () => {
+      shouldAutoScroll.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+    }
+    el.addEventListener("scroll", onScroll)
+    return () => el.removeEventListener("scroll", onScroll)
+  }, [])
+
+  useEffect(() => {
+    const el = messagesRef.current
+    if (el && shouldAutoScroll.current) el.scrollTop = el.scrollHeight
   }, [messages])
 
   const handleSend = async () => {
     if (!input.trim()) return
     try {
       setSending(true)
+      shouldAutoScroll.current = true
       const msg = await sendMessage(userId, input.trim())
       setMessages((prev) => [...prev, msg])
       setInput("")
@@ -399,5 +425,5 @@ export default function SupportPage() {
     return <AdminChat adminId={userInfo.userId} />
   }
 
-  return <UserChat userId={userInfo.userId} userName={userInfo.name} />
+  return <UserChat userId={userInfo.userId} />
 }
