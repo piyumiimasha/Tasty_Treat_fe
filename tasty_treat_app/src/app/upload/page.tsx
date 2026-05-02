@@ -5,20 +5,27 @@ import type React from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Upload, ChevronRight, ArrowLeft } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Upload, ArrowLeft, Send } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { createDesignRequest } from "@/lib/api/design-requests"
+import { getUserInfo } from "@/lib/api/auth"
 
 export default function UploadPage() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
+  const [message, setMessage] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { toast } = useToast()
 
   const handleFileSelect = (files: FileList | null) => {
     if (!files) return
-
     Array.from(files).forEach((file) => {
       if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
         setUploadedFiles((prev) => [...prev, file])
-
         const reader = new FileReader()
         reader.onload = (e) => {
           setPreviews((prev) => [...prev, e.target?.result as string])
@@ -42,6 +49,58 @@ export default function UploadPage() {
   const removeFile = (index: number) => {
     setUploadedFiles((prev) => prev.filter((_, i) => i !== index))
     setPreviews((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleUpload = async () => {
+    if (uploadedFiles.length === 0 && !message.trim()) {
+      toast({
+        title: "Nothing to upload",
+        description: "Please add an image or write a message first.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const userInfo = getUserInfo()
+    const customerName = userInfo?.name || "Guest"
+
+    try {
+      setSubmitting(true)
+      await createDesignRequest(customerName, message.trim(), uploadedFiles[0])
+      setSubmitted(true)
+      toast({
+        title: "Request sent!",
+        description: "Your design request has been sent to our team.",
+      })
+    } catch (err) {
+      toast({
+        title: "Upload failed",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (submitted) {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Card className="max-w-md w-full text-center">
+          <CardHeader>
+            <CardTitle className="text-2xl text-accent">Request Sent!</CardTitle>
+            <CardDescription>
+              Our team will review your design request and get back to you soon.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/">
+              <Button className="w-full">Back to Browse</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </main>
+    )
   }
 
   return (
@@ -68,7 +127,7 @@ export default function UploadPage() {
           <Card className="border-2 border-dashed">
             <CardHeader>
               <CardTitle>Upload Your Design</CardTitle>
-              <CardDescription>Share photos or videos of cake designs you love as inspiration</CardDescription>
+              <CardDescription>Share a photo of a cake design you love as inspiration</CardDescription>
             </CardHeader>
             <CardContent>
               <div
@@ -82,14 +141,13 @@ export default function UploadPage() {
                   Drag and drop your files here or click to browse
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Supported: JPG, PNG, GIF, WebP, MP4, WebM (Max 50MB each)
+                  Supported: JPG, PNG, GIF, WebP (Max 50MB)
                 </p>
               </div>
               <input
                 ref={fileInputRef}
                 type="file"
-                multiple
-                accept="image/*,video/*"
+                accept="image/*"
                 onChange={(e) => handleFileSelect(e.target.files)}
                 className="hidden"
               />
@@ -100,7 +158,7 @@ export default function UploadPage() {
           {previews.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Uploaded Designs ({previews.length})</CardTitle>
+                <CardTitle>Uploaded Design ({previews.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -126,6 +184,27 @@ export default function UploadPage() {
             </Card>
           )}
 
+          {/* Additional Message */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Additional Details</CardTitle>
+              <CardDescription>Describe your vision or any specific requirements</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="message">Message (optional)</Label>
+                <Textarea
+                  id="message"
+                  placeholder="e.g. I want a two-tier wedding cake with pastel flowers and gold accents..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  rows={4}
+                  className="resize-none"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Action Buttons */}
           <div className="flex gap-4">
             <Link href="/" className="flex-1">
@@ -133,12 +212,20 @@ export default function UploadPage() {
                 Back to Browse
               </Button>
             </Link>
-            <Link href="/customize" className="flex-1">
-              <Button disabled={uploadedFiles.length === 0} className="w-full gap-2">
-                Proceed to Customizer
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </Link>
+            <Button
+              className="flex-1 gap-2"
+              onClick={handleUpload}
+              disabled={submitting || (uploadedFiles.length === 0 && !message.trim())}
+            >
+              {submitting ? (
+                "Sending..."
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Upload
+                </>
+              )}
+            </Button>
           </div>
 
           {/* Info Section */}
@@ -152,8 +239,7 @@ export default function UploadPage() {
                 vision better.
               </p>
               <p>
-                You can also describe your ideas in detail during the customization process. The more information you
-                provide, the better we can match your preferences.
+                Use the message field to describe colors, themes, dietary requirements, or any other details.
               </p>
             </CardContent>
           </Card>

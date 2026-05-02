@@ -1,68 +1,63 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import Image from "next/image"
+import { useToast } from "@/hooks/use-toast"
+import { MessageCircle, Check } from "lucide-react"
+import Link from "next/link"
+import { DesignRequestDto, getAllDesignRequests, updateDesignRequestStatus } from "@/lib/api/design-requests"
 
-// Mock data
-const mockRequests = [
-  {
-    id: "REQ-001",
-    customer: "Sarah Johnson",
-    type: "Wedding Cake",
-    message: "Looking for a romantic design with roses and gold accents",
-    image: "/wedding-cake-design.jpg",
-    uploadDate: "2025-12-23",
-    status: "pending",
-  },
-  {
-    id: "REQ-002",
-    customer: "Mike Chen",
-    type: "Birthday Cake",
-    message: "Need a galaxy-themed cake for a 30th birthday party",
-    image: "/galaxy-cake.jpg",
-    uploadDate: "2025-12-22",
-    status: "reviewed",
-  },
-  {
-    id: "REQ-003",
-    customer: "Emma Davis",
-    type: "Custom Dessert",
-    message: "Gluten-free vegan cupcakes with colorful decorations",
-    image: "/vegan-cupcakes.jpg",
-    uploadDate: "2025-12-21",
-    status: "approved",
-  },
-]
+const STATUS_STYLES: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-800",
+  approved: "bg-green-100 text-green-800",
+}
 
 export default function CustomizationRequests() {
-  const [requests, setRequests] = useState(mockRequests)
+  const [requests, setRequests] = useState<DesignRequestDto[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const { toast } = useToast()
+
+  useEffect(() => {
+    loadRequests()
+  }, [])
+
+  const loadRequests = async () => {
+    try {
+      setLoading(true)
+      const data = await getAllDesignRequests()
+      setRequests(data)
+    } catch {
+      toast({ title: "Error", description: "Failed to load requests", variant: "destructive" })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApprove = async (id: number) => {
+    try {
+      const updated = await updateDesignRequestStatus(id, "approved")
+      setRequests((prev) => prev.map((r) => (r.designRequestId === id ? updated : r)))
+      toast({ title: "Approved", description: "Request has been approved." })
+    } catch {
+      toast({ title: "Error", description: "Failed to update status", variant: "destructive" })
+    }
+  }
 
   const filteredRequests = requests.filter(
     (req) =>
-      req.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.message.toLowerCase().includes(searchTerm.toLowerCase()),
+      req.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (req.message ?? "").toLowerCase().includes(searchTerm.toLowerCase()),
   )
-
-  const updateRequestStatus = (id, newStatus) => {
-    setRequests(requests.map((req) => (req.id === id ? { ...req, status: newStatus } : req)))
-  }
-
-  const statusColors = {
-    pending: "bg-yellow-100 text-yellow-800",
-    reviewed: "bg-blue-100 text-blue-800",
-    approved: "bg-green-100 text-green-800",
-  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Customization Requests</CardTitle>
-        <CardDescription>View customer uploads, design requests, and messages</CardDescription>
+        <CardDescription>View customer uploads and design requests</CardDescription>
       </CardHeader>
       <CardContent>
         {/* Search */}
@@ -75,59 +70,76 @@ export default function CustomizationRequests() {
         </div>
 
         {/* Requests Grid */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredRequests.map((req) => (
-            <div key={req.id} className="overflow-hidden rounded-lg border bg-card">
-              {/* Image */}
-              <div className="relative h-48 w-full bg-muted">
-                <Image src={req.image || "/placeholder.svg"} alt={req.type} fill className="object-cover" />
-              </div>
-
-              {/* Content */}
-              <div className="p-4">
-                <div className="mb-3 flex items-start justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">{req.id}</p>
-                    <h3 className="text-sm font-semibold">{req.customer}</h3>
-                  </div>
-                  <Badge className={statusColors[req.status]}>{req.status}</Badge>
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        ) : filteredRequests.length === 0 ? (
+          <p className="py-12 text-center text-muted-foreground">
+            {requests.length === 0 ? "No design requests yet." : "No requests match your search."}
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredRequests.map((req) => (
+              <div key={req.designRequestId} className="overflow-hidden rounded-lg border bg-card">
+                {/* Image */}
+                <div className="relative h-48 w-full bg-muted flex items-center justify-center">
+                  {req.imageUrl ? (
+                    <img
+                      src={req.imageUrl}
+                      alt="Design"
+                      className="h-full w-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg" }}
+                    />
+                  ) : (
+                    <span className="text-muted-foreground text-sm">No image</span>
+                  )}
                 </div>
 
-                <p className="mb-3 text-xs font-medium text-muted-foreground">{req.type}</p>
-                <p className="mb-4 text-sm leading-relaxed text-foreground">{req.message}</p>
+                {/* Content */}
+                <div className="p-4">
+                  <div className="mb-3 flex items-start justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">#{req.designRequestId}</p>
+                      <h3 className="text-sm font-semibold">{req.customerName}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {new Date(req.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Badge className={STATUS_STYLES[req.status] ?? "bg-gray-100 text-gray-800"}>
+                      {req.status}
+                    </Badge>
+                  </div>
 
-                {/* Actions */}
-                <div className="flex gap-2">
-                  {req.status === "pending" && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updateRequestStatus(req.id, "reviewed")}
-                        className="flex-1"
-                      >
-                        Review
+                  {req.message && (
+                    <p className="mb-4 text-sm leading-relaxed text-foreground line-clamp-3">{req.message}</p>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <Link href="/support" className="flex-1">
+                      <Button size="sm" variant="outline" className="w-full gap-1.5">
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        Chat
                       </Button>
-                      <Button size="sm" className="flex-1" onClick={() => updateRequestStatus(req.id, "approved")}>
+                    </Link>
+                    {req.status === "pending" && (
+                      <Button size="sm" className="flex-1 gap-1.5" onClick={() => handleApprove(req.designRequestId)}>
+                        <Check className="h-3.5 w-3.5" />
                         Approve
                       </Button>
-                    </>
-                  )}
-                  {req.status === "reviewed" && (
-                    <Button size="sm" className="w-full" onClick={() => updateRequestStatus(req.id, "approved")}>
-                      Approve
-                    </Button>
-                  )}
-                  {req.status === "approved" && (
-                    <Button disabled size="sm" className="w-full bg-transparent" variant="outline">
-                      Approved
-                    </Button>
-                  )}
+                    )}
+                    {req.status === "approved" && (
+                      <Button disabled size="sm" variant="outline" className="flex-1 bg-transparent">
+                        Approved
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   )
