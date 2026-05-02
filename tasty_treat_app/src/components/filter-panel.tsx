@@ -89,8 +89,8 @@ export default function FilterPanel({
           <div className="px-5 py-5 space-y-5">
             <Slider
               min={0}
-              max={500}
-              step={5}
+              max={10000}
+              step={100}
               value={priceRange}
               onValueChange={(v) => setPriceRange(v as [number, number])}
               className="w-full"

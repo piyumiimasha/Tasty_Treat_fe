@@ -25,7 +25,7 @@ export default function CakeBrowser() {
   const [allCakes, setAllCakes]                 = useState<Cake[]>([])
   const [loading, setLoading]                   = useState(true)
   const [selectedCategory, setSelectedCategory] = useState("All Cakes")
-  const [priceRange, setPriceRange]             = useState<[number, number]>([0, 500])
+  const [priceRange, setPriceRange]             = useState<[number, number]>([0, 10000])
   const [selectedFlavors, setSelectedFlavors]   = useState<string[]>([])
   const [searchQuery, setSearchQuery]           = useState("")
   const [activeSlide, setActiveSlide]           = useState(0)
@@ -94,7 +94,7 @@ export default function CakeBrowser() {
 
   const activeFilterCount =
     selectedFlavors.length +
-    (priceRange[0] > 0 || priceRange[1] < 500 ? 1 : 0) +
+    (priceRange[0] > 0 || priceRange[1] < 10000 ? 1 : 0) +
     (selectedCategory !== "All Cakes" ? 1 : 0)
 
   /* broadcast filter count to nav badge */
@@ -117,7 +117,7 @@ export default function CakeBrowser() {
   }
 
   const clearAll = () => {
-    setPriceRange([0, 500])
+    setPriceRange([0, 10000])
     setSelectedFlavors([])
     setSelectedCategory("All Cakes")
     setSearchQuery("")
@@ -245,7 +245,7 @@ export default function CakeBrowser() {
                   <SheetTitle className="font-serif text-xl font-bold text-primary">Refine Results</SheetTitle>
                   {activeFilterCount > 0 && (
                     <button
-                      onClick={() => { setPriceRange([0, 500]); setSelectedFlavors([]); setSelectedCategory("All Cakes") }}
+                      onClick={() => { setPriceRange([0, 10000]); setSelectedFlavors([]); setSelectedCategory("All Cakes") }}
                       className="text-xs text-accent hover:underline font-semibold"
                     >
                       Clear all
