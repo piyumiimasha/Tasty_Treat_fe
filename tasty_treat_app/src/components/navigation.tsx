@@ -6,6 +6,7 @@ import { ShoppingCart, LogOut, LogIn, User, ChevronDown, Cake, Search, X, Slider
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { isAuthenticated, getUserInfo, logout, type UserInfo } from "@/lib/api/auth"
+import { getCart } from "@/lib/api/cart"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +24,7 @@ export default function Navigation() {
   const [scrolled, setScrolled]       = useState(false)
   const [searchValue, setSearchValue] = useState("")
   const [filterCount, setFilterCount] = useState(0)
+  const [itemCount, setItemCount]     = useState(0)
 
   const isHomePage = pathname === "/"
 
@@ -48,6 +50,19 @@ export default function Navigation() {
     const handler = (e: Event) => setFilterCount((e as CustomEvent<number>).detail)
     window.addEventListener("filter-count", handler)
     return () => window.removeEventListener("filter-count", handler)
+  }, [])
+
+  /* cart count */
+  useEffect(() => {
+    const fetchCount = async () => {
+      const info = getUserInfo()
+      if (!info) { setItemCount(0); return }
+      const { items } = await getCart(info.userId)
+      setItemCount(items.reduce((s, i) => s + i.quantity, 0))
+    }
+    fetchCount()
+    window.addEventListener("cart-updated", fetchCount)
+    return () => window.removeEventListener("cart-updated", fetchCount)
   }, [])
 
   /* reset search + filter badge when navigating away from home */
@@ -177,7 +192,7 @@ export default function Navigation() {
 
             <Link
               href="/cart"
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+              className={`relative flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                 pathname === "/cart"
                   ? "bg-accent text-white shadow-md shadow-accent/25"
                   : "bg-accent/10 text-accent hover:bg-accent hover:text-white"
@@ -185,6 +200,11 @@ export default function Navigation() {
             >
               <ShoppingCart className="w-4 h-4" />
               <span className="hidden sm:inline">Cart</span>
+              {itemCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                  {itemCount}
+                </span>
+              )}
             </Link>
 
             {isLoggedIn ? (

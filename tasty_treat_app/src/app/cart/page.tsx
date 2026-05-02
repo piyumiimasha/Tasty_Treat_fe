@@ -1,32 +1,73 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { Trash2, Plus, Minus, ShoppingCart, ArrowRight, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { getCart, updateCartItemQuantity, removeCartItem, CartItem } from "@/lib/api/cart"
+import { getUserInfo } from "@/lib/api/auth"
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState([
-    { id: 1, name: "Elegant Wedding Cake", image: "/white-wedding-cake.jpg", price: 85, quantity: 1, size: "10 inches" },
-    { id: 2, name: "Chocolate Birthday Cake", image: "/chocolate-birthday-cake.jpg", price: 45, quantity: 2, size: "8 inches" },
-    { id: 3, name: "Vegan Cupcakes (6-Pack)", image: "/vegan-cupcakes.jpg", price: 25, quantity: 1, size: "Standard" },
-  ])
+  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const [quoteId, setQuoteId] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<number | null>(null)
 
-  const updateQuantity = (id: number, quantity: number) => {
+  const loadCart = useCallback(async (uid: number) => {
+    const { quoteId: qid, items } = await getCart(uid)
+    setQuoteId(qid)
+    setCartItems(items)
+  }, [])
+
+  useEffect(() => {
+    const info = getUserInfo()
+    if (!info) { setLoading(false); return }
+    setUserId(info.userId)
+    loadCart(info.userId).finally(() => setLoading(false))
+
+    const onUpdate = () => loadCart(info.userId)
+    window.addEventListener("cart-updated", onUpdate)
+    return () => window.removeEventListener("cart-updated", onUpdate)
+  }, [loadCart])
+
+  const handleUpdateQuantity = async (cartItemId: string, quantity: number) => {
+    if (!userId) return
     if (quantity <= 0) {
-      removeItem(id)
+      await removeCartItem(userId, cartItemId)
     } else {
-      setCartItems(cartItems.map((item) => (item.id === id ? { ...item, quantity } : item)))
+      await updateCartItemQuantity(userId, cartItemId, quantity)
     }
   }
 
-  const removeItem = (id: number) => {
-    setCartItems(cartItems.filter((item) => item.id !== id))
+  const handleRemove = async (cartItemId: string) => {
+    if (!userId) return
+    await removeCartItem(userId, cartItemId)
   }
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const tax = subtotal * 0.1
   const total = subtotal + tax
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </main>
+    )
+  }
+
+  if (!userId) {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="text-center py-20 max-w-md">
+          <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+          <h1 className="font-serif text-3xl font-bold text-primary mb-3">Please Log In</h1>
+          <p className="text-muted-foreground mb-8">You need to be logged in to view your cart.</p>
+          <Link href="/login"><Button className="rounded-full px-8 bg-accent hover:bg-accent/90 text-white">Log In</Button></Link>
+        </div>
+      </main>
+    )
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -51,7 +92,6 @@ export default function CartPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      {/* Header */}
       <div className="w-full bg-gradient-to-r from-secondary/50 to-background border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <h1 className="font-serif text-4xl font-bold text-primary mb-1">Shopping Cart</h1>
@@ -65,7 +105,7 @@ export default function CartPage() {
           <div className="lg:col-span-2 space-y-4">
             {cartItems.map((item) => (
               <div
-                key={item.id}
+                key={item.cartItemId}
                 className="flex gap-5 p-5 bg-card rounded-2xl border border-border/60 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-muted">
@@ -79,18 +119,19 @@ export default function CartPage() {
 
                 <div className="flex-1 min-w-0">
                   <h3 className="font-serif font-semibold text-foreground text-lg leading-tight mb-0.5">{item.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-3">Size: {item.size}</p>
+                  <p className="text-sm text-muted-foreground mb-0.5">Size: {item.size}</p>
+                  <p className="text-sm text-muted-foreground mb-3">Flavor: {item.flavor}</p>
 
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity - 1)}
                       className="w-8 h-8 rounded-full border border-border hover:bg-muted flex items-center justify-center transition-colors"
                     >
                       <Minus className="w-3 h-3" />
                     </button>
                     <span className="w-8 text-center font-bold text-foreground">{item.quantity}</span>
                     <button
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity + 1)}
                       className="w-8 h-8 rounded-full border border-border hover:bg-muted flex items-center justify-center transition-colors"
                     >
                       <Plus className="w-3 h-3" />
@@ -103,7 +144,7 @@ export default function CartPage() {
                     Rs. {(item.price * item.quantity).toLocaleString()}
                   </p>
                   <button
-                    onClick={() => removeItem(item.id)}
+                    onClick={() => handleRemove(item.cartItemId)}
                     className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -125,7 +166,7 @@ export default function CartPage() {
 
               <div className="space-y-3 pb-5 border-b border-border/60 mb-5">
                 {cartItems.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
+                  <div key={item.cartItemId} className="flex justify-between text-sm">
                     <span className="text-muted-foreground line-clamp-1 flex-1 mr-2">
                       {item.name} ×{item.quantity}
                     </span>
@@ -156,7 +197,7 @@ export default function CartPage() {
                 <span className="text-2xl font-bold text-primary font-serif">Rs. {total.toFixed(2)}</span>
               </div>
 
-              <Link href="/checkout" className="block">
+              <Link href={`/checkout?quoteId=${quoteId}`} className="block">
                 <Button className="w-full h-12 rounded-xl bg-accent hover:bg-accent/90 text-white font-semibold shadow-md shadow-accent/25 gap-2">
                   Proceed to Checkout
                   <ArrowRight className="w-4 h-4" />

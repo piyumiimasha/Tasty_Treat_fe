@@ -5,6 +5,9 @@ import { useState, useEffect, useMemo } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Cake } from "@/lib/mappers/item-mapper"
 import { ItemFlavourDto, getFlavoursByItem } from "@/lib/api/item-flavours"
+import { addItemToCart } from "@/lib/api/cart"
+import { useToast } from "@/hooks/use-toast"
+import { getUserInfo } from "@/lib/api/auth"
 
 
 function parseKg(weightStr: string): number {
@@ -18,6 +21,8 @@ interface CakeModalProps {
 }
 
 export default function CakeModal({ cake, onClose }: CakeModalProps) {
+  const { toast } = useToast()
+  const [addingToCart, setAddingToCart] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isFavorited, setIsFavorited] = useState(false)
   const [quantity, setQuantity] = useState(1)
@@ -241,9 +246,37 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
                 </button>
               </div>
 
-              <button className="w-full py-3.5 bg-accent text-white rounded-xl font-semibold hover:bg-accent/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md shadow-accent/25">
+              <button
+                disabled={addingToCart}
+                onClick={async () => {
+                  const info = getUserInfo()
+                  if (!info) {
+                    toast({ title: "Please log in", description: "You need to be logged in to add items to cart.", variant: "destructive" })
+                    return
+                  }
+                  try {
+                    setAddingToCart(true)
+                    await addItemToCart(info.userId, {
+                      itemId: cake.id,
+                      name: cake.name,
+                      image: cake.images[0] || "",
+                      price: calculatedPrice,
+                      quantity,
+                      size: selectedWeight,
+                      flavor: selectedFlavour ? selectedFlavour.name : cake.flavor,
+                    })
+                    toast({ title: "Added to cart", description: `${cake.name} × ${quantity}` })
+                    onClose()
+                  } catch {
+                    toast({ title: "Error", description: "Failed to add to cart.", variant: "destructive" })
+                  } finally {
+                    setAddingToCart(false)
+                  }
+                }}
+                className="w-full py-3.5 bg-accent text-white rounded-xl font-semibold hover:bg-accent/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md shadow-accent/25 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
                 <ShoppingCart className="w-5 h-5" />
-                Add to Cart — Rs. {totalPrice.toLocaleString()}
+                {addingToCart ? "Adding…" : `Add to Cart — Rs. ${totalPrice.toLocaleString()}`}
               </button>
 
               <button

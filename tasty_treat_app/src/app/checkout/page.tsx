@@ -1,57 +1,113 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
-import Link from "next/link"
+import { useState, useEffect, useCallback } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { CheckCircle2, Truck, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { getCart, CartItem, convertCartToOrder } from "@/lib/api/cart"
+import { getUserInfo } from "@/lib/api/auth"
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079'
+
+function headers(): HeadersInit {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
 
 export default function CheckoutPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const quoteId = searchParams.get('quoteId') ? Number(searchParams.get('quoteId')) : null
+
   const [step, setStep] = useState<"shipping" | "payment" | "confirmation">("shipping")
+  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const [orderId, setOrderId] = useState<number | null>(null)
+  const [placing, setPlacing] = useState(false)
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "",
-    state: "",
-    zip: "",
-    cardNumber: "",
-    cardName: "",
-    expiry: "",
-    cvc: "",
+    firstName: "", lastName: "", email: "", phone: "",
+    address: "", city: "", state: "", zip: "",
+    cardNumber: "", cardName: "", expiry: "", cvc: "",
     deliveryDate: "",
   })
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const loadCart = useCallback(async () => {
+    const info = getUserInfo()
+    if (!info) return
+    const { items } = await getCart(info.userId)
+    setCartItems(items)
+  }, [])
+
+  useEffect(() => { loadCart() }, [loadCart])
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleNext = () => {
-    if (step === "shipping") {
-      setStep("payment")
-    } else if (step === "payment") {
+  const handlePlaceOrder = async () => {
+    const info = getUserInfo()
+    if (!info || !quoteId) return
+
+    const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0)
+    const tax = subtotal * 0.1
+    const total = Math.round((subtotal + tax) * 100) / 100
+
+    try {
+      setPlacing(true)
+
+      // 1. Create the order
+      const orderRes = await fetch(`${API_BASE_URL}/api/Orders`, {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify({
+          customerId: info.userId,
+          status: 'Pending',
+          deliveryAddress: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`,
+          specialInstructions: '',
+          totalAmount: total,
+        }),
+      })
+      if (!orderRes.ok) throw new Error('Failed to create order')
+      const order = await orderRes.json()
+
+      // 2. Create order items
+      await Promise.all(
+        cartItems.map((item) =>
+          fetch(`${API_BASE_URL}/api/OrderItems`, {
+            method: 'POST',
+            headers: headers(),
+            body: JSON.stringify({
+              orderId: order.orderId,
+              itemId: item.itemId,
+              quantity: item.quantity,
+              orderItemPrice: item.price,
+              isAvailable: true,
+            }),
+          })
+        )
+      )
+
+      // 3. Mark the quote as converted
+      await convertCartToOrder(quoteId, order.orderId)
+
+      setOrderId(order.orderId)
       setStep("confirmation")
+    } catch {
+      alert("Failed to place order. Please try again.")
+    } finally {
+      setPlacing(false)
     }
   }
 
-  const handleBack = () => {
-    if (step === "payment") {
-      setStep("shipping")
-    } else if (step === "confirmation") {
-      setStep("payment")
-    }
-  }
-
-  const subtotal = 155
-  const tax = 15.5
-  const delivery = 0
-  const total = subtotal + tax + delivery
+  const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0)
+  const tax = subtotal * 0.1
+  const total = subtotal + tax
 
   return (
     <main className="min-h-screen bg-background">
@@ -60,106 +116,61 @@ export default function CheckoutPage() {
 
         {/* Progress Steps */}
         <div className="flex gap-4 mb-8">
-          <div
-            className={`flex-1 pb-4 border-b-2 transition ${step === "shipping" ? "border-primary" : "border-muted"}`}
-          >
-            <div className="text-sm font-semibold text-muted-foreground mb-1">Step 1</div>
-            <div className={`text-lg font-serif ${step === "shipping" ? "text-foreground" : "text-muted-foreground"}`}>
-              Shipping
+          {(["shipping", "payment", "confirmation"] as const).map((s, idx) => (
+            <div key={s} className={`flex-1 pb-4 border-b-2 transition ${step === s ? "border-primary" : "border-muted"}`}>
+              <div className="text-sm font-semibold text-muted-foreground mb-1">Step {idx + 1}</div>
+              <div className={`text-lg font-serif capitalize ${step === s ? "text-foreground" : "text-muted-foreground"}`}>
+                {s}
+              </div>
             </div>
-          </div>
-          <div
-            className={`flex-1 pb-4 border-b-2 transition ${step === "payment" ? "border-primary" : "border-muted"}`}
-          >
-            <div className="text-sm font-semibold text-muted-foreground mb-1">Step 2</div>
-            <div className={`text-lg font-serif ${step === "payment" ? "text-foreground" : "text-muted-foreground"}`}>
-              Payment
-            </div>
-          </div>
-          <div
-            className={`flex-1 pb-4 border-b-2 transition ${step === "confirmation" ? "border-primary" : "border-muted"}`}
-          >
-            <div className="text-sm font-semibold text-muted-foreground mb-1">Step 3</div>
-            <div
-              className={`text-lg font-serif ${step === "confirmation" ? "text-foreground" : "text-muted-foreground"}`}
-            >
-              Confirmation
-            </div>
-          </div>
+          ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form Section */}
           <div className="lg:col-span-2">
-            {/* Shipping Form */}
             {step === "shipping" && (
               <Card className="p-8">
                 <div className="flex items-center gap-3 mb-6">
                   <Truck className="w-6 h-6 text-primary" />
                   <h2 className="text-2xl font-serif font-bold text-foreground">Shipping Information</h2>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-semibold text-foreground mb-2">First Name</label>
-                    <Input
-                      name="firstName"
-                      placeholder="John"
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                    />
+                    <Input name="firstName" placeholder="John" value={formData.firstName} onChange={handleInputChange} />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-foreground mb-2">Last Name</label>
                     <Input name="lastName" placeholder="Doe" value={formData.lastName} onChange={handleInputChange} />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-semibold text-foreground mb-2">Email</label>
-                    <Input
-                      name="email"
-                      type="email"
-                      placeholder="john@example.com"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                    />
+                    <Input name="email" type="email" placeholder="john@example.com" value={formData.email} onChange={handleInputChange} />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-foreground mb-2">Phone</label>
-                    <Input
-                      name="phone"
-                      placeholder="+1 (555) 123-4567"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                    />
+                    <Input name="phone" placeholder="+94 77 123 4567" value={formData.phone} onChange={handleInputChange} />
                   </div>
                 </div>
-
                 <div className="mb-4">
                   <label className="block text-sm font-semibold text-foreground mb-2">Delivery Date</label>
                   <Input name="deliveryDate" type="date" value={formData.deliveryDate} onChange={handleInputChange} />
                 </div>
-
                 <div className="mb-4">
                   <label className="block text-sm font-semibold text-foreground mb-2">Street Address</label>
-                  <Input
-                    name="address"
-                    placeholder="123 Main St"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                  />
+                  <Input name="address" placeholder="123 Main St" value={formData.address} onChange={handleInputChange} />
                 </div>
-
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-foreground mb-2">City</label>
-                    <Input name="city" placeholder="New York" value={formData.city} onChange={handleInputChange} />
+                    <Input name="city" placeholder="Colombo" value={formData.city} onChange={handleInputChange} />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-foreground mb-2">State</label>
-                    <Input name="state" placeholder="NY" value={formData.state} onChange={handleInputChange} />
+                    <Input name="state" placeholder="Western" value={formData.state} onChange={handleInputChange} />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-foreground mb-2">ZIP Code</label>
@@ -169,34 +180,20 @@ export default function CheckoutPage() {
               </Card>
             )}
 
-            {/* Payment Form */}
             {step === "payment" && (
               <Card className="p-8">
                 <div className="flex items-center gap-3 mb-6">
                   <CreditCard className="w-6 h-6 text-primary" />
                   <h2 className="text-2xl font-serif font-bold text-foreground">Payment Information</h2>
                 </div>
-
                 <div className="mb-4">
                   <label className="block text-sm font-semibold text-foreground mb-2">Cardholder Name</label>
-                  <Input
-                    name="cardName"
-                    placeholder="John Doe"
-                    value={formData.cardName}
-                    onChange={handleInputChange}
-                  />
+                  <Input name="cardName" placeholder="John Doe" value={formData.cardName} onChange={handleInputChange} />
                 </div>
-
                 <div className="mb-4">
                   <label className="block text-sm font-semibold text-foreground mb-2">Card Number</label>
-                  <Input
-                    name="cardNumber"
-                    placeholder="1234 5678 9012 3456"
-                    value={formData.cardNumber}
-                    onChange={handleInputChange}
-                  />
+                  <Input name="cardNumber" placeholder="1234 5678 9012 3456" value={formData.cardNumber} onChange={handleInputChange} />
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-foreground mb-2">Expiry Date</label>
@@ -210,7 +207,6 @@ export default function CheckoutPage() {
               </Card>
             )}
 
-            {/* Confirmation */}
             {step === "confirmation" && (
               <Card className="p-8 text-center">
                 <CheckCircle2 className="w-16 h-16 text-accent mx-auto mb-4" />
@@ -218,16 +214,15 @@ export default function CheckoutPage() {
                 <p className="text-muted-foreground mb-6">
                   Your delicious cakes will be prepared with care and delivered on your chosen date.
                 </p>
-                <p className="text-foreground mb-8">
-                  <span className="text-sm text-muted-foreground">Order Number: </span>
-                  <span className="font-semibold">#AC-{Math.floor(Math.random() * 10000)}</span>
-                </p>
-                <p className="text-muted-foreground mb-8">
-                  A confirmation email has been sent to <span className="font-semibold">{formData.email}</span>
-                </p>
-                <Link href="/orders">
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90">Track Your Order</Button>
-                </Link>
+                {orderId && (
+                  <p className="text-foreground mb-8">
+                    <span className="text-sm text-muted-foreground">Order Number: </span>
+                    <span className="font-semibold">#ORD-{orderId}</span>
+                  </p>
+                )}
+                <Button onClick={() => router.push('/orders')} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  Track Your Order
+                </Button>
               </Card>
             )}
           </div>
@@ -238,14 +233,14 @@ export default function CheckoutPage() {
               <h3 className="text-xl font-serif font-bold text-foreground mb-4">Order Summary</h3>
 
               <div className="space-y-3 mb-4 border-b border-border pb-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Elegant Wedding Cake</span>
-                  <span className="font-semibold">Rs. 85.00</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Chocolate Birthday Cake (x2)</span>
-                  <span className="font-semibold">Rs. 90.00</span>
-                </div>
+                {cartItems.map((item) => (
+                  <div key={item.cartItemId} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground line-clamp-1 flex-1 mr-2">
+                      {item.name} ×{item.quantity}
+                    </span>
+                    <span className="font-semibold flex-shrink-0">Rs. {(item.price * item.quantity).toLocaleString()}</span>
+                  </div>
+                ))}
               </div>
 
               <div className="space-y-2 mb-6">
@@ -254,7 +249,7 @@ export default function CheckoutPage() {
                   <span>Rs. {subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-foreground">
-                  <span>Tax</span>
+                  <span>Tax (10%)</span>
                   <span>Rs. {tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-foreground">
@@ -271,25 +266,29 @@ export default function CheckoutPage() {
               </div>
 
               <div className="flex gap-3">
-                {step !== "shipping" && (
-                  <Button variant="outline" className="flex-1 bg-transparent" onClick={handleBack}>
+                {step === "payment" && (
+                  <Button variant="outline" className="flex-1 bg-transparent" onClick={() => setStep("shipping")}>
                     Back
                   </Button>
                 )}
-                {step !== "confirmation" && (
+                {step === "shipping" && (
+                  <Button className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setStep("payment")}>
+                    Next: Payment
+                  </Button>
+                )}
+                {step === "payment" && (
                   <Button
                     className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-                    onClick={handleNext}
+                    disabled={placing}
+                    onClick={handlePlaceOrder}
                   >
-                    {step === "shipping" ? "Next: Payment" : "Complete Order"}
+                    {placing ? "Placing…" : "Complete Order"}
                   </Button>
                 )}
                 {step === "confirmation" && (
-                  <Link href="/" className="block flex-1">
-                    <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                      Continue Shopping
-                    </Button>
-                  </Link>
+                  <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => router.push('/')}>
+                    Continue Shopping
+                  </Button>
                 )}
               </div>
             </Card>
