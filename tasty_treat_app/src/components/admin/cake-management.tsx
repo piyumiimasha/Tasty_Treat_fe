@@ -4,11 +4,8 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Table } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Select } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Plus, Edit, Trash2, Search, X, UtensilsCrossed } from "lucide-react"
 import { getAllItems, createItem, updateItem, deleteItem } from "@/lib/api/items"
@@ -16,6 +13,112 @@ import { mapItemToCake, mapCakeToCreateItem, mapCakeToUpdateItem, Cake } from "@
 import FlavourConfigDialog from "@/components/admin/flavour-config-dialog"
 
 const CATEGORIES = ["Wedding Cakes", "Birthday Cakes", "Cupcakes", "Desserts", "Custom Designs"]
+
+interface FormData {
+  name: string
+  category: string
+  price: number
+  size: string
+  flavor: string
+  images: string
+}
+
+interface CakeFormFieldsProps {
+  formData: FormData
+  setFormData: (data: FormData) => void
+  imagePreviews: string[]
+  handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  removeImage: () => void
+}
+
+function CakeFormFields({ formData, setFormData, imagePreviews, handleImageChange, removeImage }: CakeFormFieldsProps) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="name">Cake Name *</Label>
+        <Input
+          id="name"
+          placeholder="Enter cake name"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="category">Category *</Label>
+        <select
+          id="category"
+          className="w-full rounded-md border border-input bg-background px-3 py-2"
+          value={formData.category}
+          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+        >
+          {CATEGORIES.map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="price">Price (Rs.) *</Label>
+          <Input
+            id="price"
+            type="number"
+            min="0"
+            placeholder="0"
+            value={formData.price}
+            onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="size">Size *</Label>
+          <Input
+            id="size"
+            placeholder="e.g., 2 kg"
+            value={formData.size}
+            onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="flavor">Flavor *</Label>
+        <Input
+          id="flavor"
+          placeholder="e.g., Vanilla Bean & Champagne"
+          value={formData.flavor}
+          onChange={(e) => setFormData({ ...formData, flavor: e.target.value })}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="images">Upload Image</Label>
+        <Input
+          id="images"
+          type="file"
+          accept="image/*"
+          onChange={handleImageChange}
+          className="cursor-pointer"
+        />
+        <p className="text-xs text-muted-foreground mt-1">Accepted formats: JPG, PNG, GIF, WEBP (max 5MB)</p>
+        {imagePreviews.length > 0 && (
+          <div className="mt-3">
+            <div className="relative group inline-block">
+              <img src={imagePreviews[0]} alt="Preview" className="w-40 h-40 object-cover rounded border" />
+              <button
+                type="button"
+                onClick={removeImage}
+                className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export default function CakeManagement() {
   const [cakes, setCakes] = useState<Cake[]>([])
@@ -28,8 +131,7 @@ export default function CakeManagement() {
   const [flavourDialogCake, setFlavourDialogCake] = useState<Cake | null>(null)
   const { toast } = useToast()
 
-  // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: "",
     category: "Wedding Cakes",
     price: 0,
@@ -231,11 +333,6 @@ export default function CakeManagement() {
     setImagePreviews([preview])
   }
 
-  const removeImage = (index: number) => {
-    setImageFiles([])
-    setImagePreviews([])
-  }
-
   const filteredCakes = cakes.filter(
     (cake) =>
       cake.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -243,98 +340,13 @@ export default function CakeManagement() {
       cake.flavor.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const CakeFormFields = () => (
-    <div className="space-y-4">
-      <div>
-        <Label htmlFor="name">Cake Name *</Label>
-        <Input
-          id="name"
-          placeholder="Enter cake name"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="category">Category *</Label>
-        <select
-          id="category"
-          className="w-full rounded-md border border-input bg-background px-3 py-2"
-          value={formData.category}
-          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-        >
-          {CATEGORIES.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="price">Price (Rs.) *</Label>
-          <Input
-            id="price"
-            type="number"
-            min="0"
-            placeholder="0"
-            value={formData.price}
-            onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-          />
-        </div>
-        <div>
-          <Label htmlFor="size">Size *</Label>
-          <Input
-            id="size"
-            placeholder="e.g., 2 kg"
-            value={formData.size}
-            onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-          />
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="flavor">Flavor *</Label>
-        <Input
-          id="flavor"
-          placeholder="e.g., Vanilla Bean & Champagne"
-          value={formData.flavor}
-          onChange={(e) => setFormData({ ...formData, flavor: e.target.value })}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="images">Upload Image</Label>
-        <Input
-          id="images"
-          type="file"
-          accept="image/*"
-          onChange={handleImageChange}
-          className="cursor-pointer"
-        />
-        <p className="text-xs text-muted-foreground mt-1">Accepted formats: JPG, PNG, GIF, WEBP (max 5MB)</p>
-        {imagePreviews.length > 0 && (
-          <div className="mt-3">
-            <div className="relative group inline-block">
-              <img
-                src={imagePreviews[0]}
-                alt="Preview"
-                className="w-40 h-40 object-cover rounded border"
-              />
-              <button
-                type="button"
-                onClick={() => removeImage(0)}
-                className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
+  const formProps: CakeFormFieldsProps = {
+    formData,
+    setFormData,
+    imagePreviews,
+    handleImageChange,
+    removeImage: () => { setImageFiles([]); setImagePreviews([]) },
+  }
 
   return (
     <div className="space-y-6">
@@ -356,7 +368,7 @@ export default function CakeManagement() {
               <DialogTitle>Add New Cake</DialogTitle>
               <DialogDescription>Create a new cake item for the catalog</DialogDescription>
             </DialogHeader>
-            <CakeFormFields />
+            <CakeFormFields {...formProps} />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={submitting}>
                 Cancel
