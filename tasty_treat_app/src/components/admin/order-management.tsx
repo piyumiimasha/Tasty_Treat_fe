@@ -24,6 +24,7 @@ interface OrderDto {
   orderDate: string
 }
 
+
 const STATUS_OPTIONS = ["Pending", "In Progress", "Baking", "Decoration", "Ready for Pickup", "Completed", "Cancelled"]
 
 const statusColor: Record<string, string> = {
@@ -38,6 +39,7 @@ const statusColor: Record<string, string> = {
 
 export default function OrderManagement() {
   const [orders, setOrders] = useState<OrderDto[]>([])
+  const [userNames, setUserNames] = useState<Record<number, string>>({})
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
@@ -47,10 +49,17 @@ export default function OrderManagement() {
   const loadOrders = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch(`${API_BASE_URL}/api/Orders`, { headers: headers() })
-      if (!res.ok) throw new Error()
-      const data: OrderDto[] = await res.json()
+      const [ordersRes, usersRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/Orders`, { headers: headers() }),
+        fetch(`${API_BASE_URL}/api/Users`, { headers: headers() }),
+      ])
+      if (!ordersRes.ok) throw new Error()
+      const data: OrderDto[] = await ordersRes.json()
       setOrders(data.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()))
+      if (usersRes.ok) {
+        const users: { userId: number; name: string }[] = await usersRes.json()
+        setUserNames(Object.fromEntries(users.map((u) => [u.userId, u.name])))
+      }
     } catch {
       toast({ title: "Error", description: "Failed to load orders.", variant: "destructive" })
     } finally {
@@ -79,8 +88,10 @@ export default function OrderManagement() {
   }
 
   const filtered = orders.filter((o) => {
-    const matchSearch = `ORD-${o.orderId}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      String(o.customerId).includes(searchTerm)
+    const name = userNames[o.customerId] ?? ""
+    const matchSearch =
+      `ORD-${o.orderId}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      name.toLowerCase().includes(searchTerm.toLowerCase())
     const matchStatus = filterStatus === "all" || o.status === filterStatus
     return matchSearch && matchStatus
   })
@@ -148,7 +159,7 @@ export default function OrderManagement() {
                 filtered.map((order) => (
                   <tr key={order.orderId} className="border-b hover:bg-muted/50">
                     <td className="px-4 py-3 text-sm font-medium">#ORD-{order.orderId}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">Customer #{order.customerId}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{userNames[order.customerId] ?? `Customer #${order.customerId}`}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">
                       {new Date(order.orderDate).toLocaleDateString()}
                     </td>
