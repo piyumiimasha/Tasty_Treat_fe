@@ -1,43 +1,33 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import OrderManagement from "@/components/admin/order-management"
 import CustomizationRequests from "@/components/admin/customization-requests"
 import DesignerOptions from "@/components/admin/designer-options"
 import CakeManagement from "@/components/admin/cake-management"
+import Link from "next/link"
+import { BarChart2 } from "lucide-react"
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("orders")
-
-  // Mock statistics
-  const stats = [
-    { label: "Total Orders", value: 24, color: "bg-primary" },
-    { label: "Pending Requests", value: 8, color: "bg-accent" },
-    { label: "In Progress", value: 12, color: "bg-secondary" },
-    { label: "Completed", value: 4, color: "bg-green-500" },
-  ]
 
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl p-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground">Admin Dashboard</h1>
-          <p className="mt-2 text-muted-foreground">Manage orders, customizations, cake catalog, and designer options</p>
-        </div>
-
-        {/* Statistics */}
-        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => (
-            <Card key={stat.label} className="border-0 shadow-sm">
-              <CardContent className="p-6">
-                <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-                <p className="mt-2 text-3xl font-bold text-foreground">{stat.value}</p>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-foreground">Admin Dashboard</h1>
+            <p className="mt-2 text-muted-foreground">Manage orders, customizations, cake catalog, and designer options</p>
+          </div>
+          <Link
+            href="/admin/statistics"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            <BarChart2 className="w-4 h-4" />
+            Statistics
+          </Link>
         </div>
 
         {/* Tabs */}

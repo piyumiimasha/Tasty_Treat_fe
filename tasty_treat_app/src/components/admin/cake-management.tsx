@@ -478,7 +478,7 @@ export default function CakeManagement() {
             <DialogTitle>Edit Cake</DialogTitle>
             <DialogDescription>Update cake details</DialogDescription>
           </DialogHeader>
-          <CakeFormFields />
+          <CakeFormFields {...formProps} />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={submitting}>
               Cancel
