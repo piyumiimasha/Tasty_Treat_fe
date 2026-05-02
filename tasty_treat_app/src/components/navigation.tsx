@@ -63,7 +63,7 @@ export default function Navigation() {
     fetchCount()
     window.addEventListener("cart-updated", fetchCount)
     return () => window.removeEventListener("cart-updated", fetchCount)
-  }, [])
+  }, [isLoggedIn])
 
   /* reset search + filter badge when navigating away from home */
   useEffect(() => {
