@@ -76,15 +76,21 @@ export default function CustomizerShell() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [apiTypes, setApiTypes]         = useState<CustomizationTypeDto[]>([])
   const [apiOptions, setApiOptions]     = useState<CustomizationOptionDto[]>([])
+  const [loadingOptions, setLoadingOptions] = useState(true)
 
   useEffect(() => {
+    setLoadingOptions(true)
     Promise.all([getCustomizationTypes(), getDesignerOptions()])
       .then(([types, options]) => {
         setApiTypes(types)
         setApiOptions(options)
       })
-      .catch(() => {})
-  }, [])
+      .catch((err) => {
+        console.error("[Customizer] failed to load options:", err)
+        toast({ title: "Could not load options", description: "Make sure the backend is running.", variant: "destructive" })
+      })
+      .finally(() => setLoadingOptions(false))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const categories = useMemo(() => buildCategories(apiTypes, apiOptions), [apiTypes, apiOptions])
 
@@ -236,7 +242,11 @@ export default function CustomizerShell() {
         {/* ── Right panel ── */}
         <div className="space-y-4">
           <div className="rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border">
-            {categories.map((cat) => {
+            {loadingOptions ? (
+              <div className="flex justify-center py-16">
+                <div className="h-7 w-7 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              </div>
+            ) : categories.map((cat) => {
               const value = design[cat.key] as string | string[]
               return (
                 <div key={cat.key} className="px-5 py-4">
