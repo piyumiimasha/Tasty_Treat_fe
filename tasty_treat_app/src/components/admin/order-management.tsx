@@ -7,21 +7,12 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079'
+import { getAllOrders, updateOrder, OrderDto } from "@/lib/api/orders"
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079'
 function headers(): HeadersInit {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
   return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-}
-
-interface OrderDto {
-  orderId: number
-  customerId: number
-  status: string
-  deliveryAddress: string | null
-  specialInstructions: string | null
-  totalAmount: number
-  orderDate: string
 }
 
 
@@ -49,12 +40,10 @@ export default function OrderManagement() {
   const loadOrders = useCallback(async () => {
     try {
       setLoading(true)
-      const [ordersRes, usersRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/Orders`, { headers: headers() }),
+      const [data, usersRes] = await Promise.all([
+        getAllOrders(),
         fetch(`${API_BASE_URL}/api/Users`, { headers: headers() }),
       ])
-      if (!ordersRes.ok) throw new Error()
-      const data: OrderDto[] = await ordersRes.json()
       setOrders(data.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()))
       if (usersRes.ok) {
         const users: { userId: number; name: string }[] = await usersRes.json()
@@ -72,12 +61,7 @@ export default function OrderManagement() {
   const updateStatus = async (orderId: number, status: string) => {
     try {
       setUpdating(orderId)
-      const res = await fetch(`${API_BASE_URL}/api/Orders/${orderId}`, {
-        method: 'PUT',
-        headers: headers(),
-        body: JSON.stringify({ status }),
-      })
-      if (!res.ok) throw new Error()
+      await updateOrder(orderId, { status })
       setOrders((prev) => prev.map((o) => o.orderId === orderId ? { ...o, status } : o))
       toast({ title: "Updated", description: `Order #ORD-${orderId} status set to ${status}.` })
     } catch {
