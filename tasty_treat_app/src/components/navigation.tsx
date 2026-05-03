@@ -87,10 +87,11 @@ export default function Navigation() {
   }
 
   const navLinks = [
-    { href: "/",        label: "Browse"       },
-    { href: "/upload",  label: "Upload Design" },
-    { href: "/support", label: "Support"       },
-    { href: "/orders",  label: "Track Order"   },
+    { href: "/",          label: "Browse"         },
+    { href: "/customize", label: "Customize Cake"  },
+    { href: "/upload",    label: "Upload Design"   },
+    { href: "/support",   label: "Support"         },
+    { href: "/orders",    label: "Track Order"     },
   ]
 
   const isAdmin = userInfo?.role?.toLowerCase() === "admin"

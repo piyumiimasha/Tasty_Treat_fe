@@ -1,47 +1,60 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, Trash2, Pencil, Circle, Layers, Droplets, Palette, Star, Sparkles, Tag } from "lucide-react"
-import type { DesignerOption } from "@/lib/types/cake-designer"
+import { Plus, Trash2, Pencil, Circle, Layers, Droplets, Palette, Star, Sparkles, Tag, Leaf, Cake } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import {
+  getDesignerOptions,
+  createDesignerOption,
+  updateDesignerOption,
+  deleteDesignerOption,
+  type CustomizationOptionDto,
+} from "@/lib/api/customization-options"
 
-const CATEGORIES: { id: DesignerOption["category"]; label: string; icon: React.ReactNode; color: string; accent: string }[] = [
+const CATEGORIES: { id: string; label: string; icon: React.ReactNode; color: string; accent: string }[] = [
   { id: "shapes",      label: "Shapes",      icon: <Circle className="w-4 h-4" />,    color: "text-violet-600",  accent: "bg-violet-50 border-violet-200"  },
   { id: "layers",      label: "Layers",      icon: <Layers className="w-4 h-4" />,    color: "text-blue-600",    accent: "bg-blue-50 border-blue-200"      },
   { id: "frosting",    label: "Frosting",    icon: <Droplets className="w-4 h-4" />,  color: "text-pink-600",    accent: "bg-pink-50 border-pink-200"      },
+  { id: "flavour",     label: "Flavour",     icon: <Cake className="w-4 h-4" />,      color: "text-rose-600",    accent: "bg-rose-50 border-rose-200"      },
   { id: "colors",      label: "Colors",      icon: <Palette className="w-4 h-4" />,   color: "text-orange-600",  accent: "bg-orange-50 border-orange-200"  },
   { id: "toppers",     label: "Toppers",     icon: <Star className="w-4 h-4" />,      color: "text-amber-600",   accent: "bg-amber-50 border-amber-200"    },
   { id: "decorations", label: "Decorations", icon: <Sparkles className="w-4 h-4" />, color: "text-teal-600",    accent: "bg-teal-50 border-teal-200"      },
-]
-
-const INITIAL: DesignerOption[] = [
-  { id: "round",         category: "shapes",      name: "Round",         price: 0  },
-  { id: "square",        category: "shapes",      name: "Square",        price: 5  },
-  { id: "heart",         category: "shapes",      name: "Heart",         price: 8  },
-  { id: "buttercream",   category: "frosting",    name: "Buttercream",   price: 0  },
-  { id: "ganache",       category: "frosting",    name: "Ganache",       price: 12 },
-  { id: "fondant",       category: "frosting",    name: "Fondant",       price: 15 },
-  { id: "gold-drip",     category: "toppers",     name: "Gold Drip",     price: 15 },
-  { id: "fresh-flowers", category: "toppers",     name: "Fresh Flowers", price: 8  },
-  { id: "2-layer",       category: "layers",      name: "2 Layers",      price: 0  },
-  { id: "3-layer",       category: "layers",      name: "3 Layers",      price: 20 },
+  { id: "dietary",     label: "Dietary",     icon: <Leaf className="w-4 h-4" />,      color: "text-green-600",   accent: "bg-green-50 border-green-200"    },
 ]
 
 interface FormState { name: string; price: string }
 const EMPTY_FORM: FormState = { name: "", price: "0" }
 
 export default function DesignerOptions() {
-  const [options, setOptions]             = useState<DesignerOption[]>(INITIAL)
-  const [activeCategory, setActiveCategory] = useState<DesignerOption["category"]>("shapes")
-  const [dialogOpen, setDialogOpen]       = useState(false)
-  const [editingId, setEditingId]         = useState<string | number | null>(null)
-  const [form, setForm]                   = useState<FormState>(EMPTY_FORM)
+  const { toast } = useToast()
+  const [options, setOptions]               = useState<CustomizationOptionDto[]>([])
+  const [loading, setLoading]               = useState(true)
+  const [activeCategory, setActiveCategory] = useState("shapes")
+  const [dialogOpen, setDialogOpen]         = useState(false)
+  const [editingId, setEditingId]           = useState<number | null>(null)
+  const [form, setForm]                     = useState<FormState>(EMPTY_FORM)
+  const [saving, setSaving]                 = useState(false)
 
   const catMeta = CATEGORIES.find((c) => c.id === activeCategory)!
-  const visible = options.filter((o) => o.category === activeCategory)
+  const visible = options.filter((o) => o.type === activeCategory)
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true)
+      const data = await getDesignerOptions()
+      setOptions(data)
+    } catch {
+      toast({ title: "Error", description: "Failed to load designer options.", variant: "destructive" })
+    } finally {
+      setLoading(false)
+    }
+  }, [toast])
+
+  useEffect(() => { load() }, [load])
 
   const openAdd = () => {
     setEditingId(null)
@@ -49,26 +62,42 @@ export default function DesignerOptions() {
     setDialogOpen(true)
   }
 
-  const openEdit = (opt: DesignerOption) => {
-    setEditingId(opt.id)
-    setForm({ name: opt.name, price: String(opt.price) })
+  const openEdit = (opt: CustomizationOptionDto) => {
+    setEditingId(opt.optionId)
+    setForm({ name: opt.name, price: String(opt.additionalPrice) })
     setDialogOpen(true)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const name  = form.name.trim()
     const price = parseFloat(form.price) || 0
     if (!name) return
 
-    if (editingId != null) {
-      setOptions((prev) => prev.map((o) => o.id === editingId ? { ...o, name, price } : o))
-    } else {
-      setOptions((prev) => [...prev, { id: Date.now().toString(), category: activeCategory, name, price }])
+    setSaving(true)
+    try {
+      if (editingId != null) {
+        const updated = await updateDesignerOption(editingId, { name, additionalPrice: price })
+        setOptions((prev) => prev.map((o) => o.optionId === editingId ? updated : o))
+      } else {
+        const created = await createDesignerOption({ name, type: activeCategory, additionalPrice: price })
+        setOptions((prev) => [...prev, created])
+      }
+      setDialogOpen(false)
+    } catch {
+      toast({ title: "Error", description: "Failed to save option.", variant: "destructive" })
+    } finally {
+      setSaving(false)
     }
-    setDialogOpen(false)
   }
 
-  const handleDelete = (id: string | number) => setOptions((prev) => prev.filter((o) => o.id !== id))
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteDesignerOption(id)
+      setOptions((prev) => prev.filter((o) => o.optionId !== id))
+    } catch {
+      toast({ title: "Error", description: "Failed to delete option.", variant: "destructive" })
+    }
+  }
 
   return (
     <div className="flex gap-6 min-h-[520px]">
@@ -76,7 +105,7 @@ export default function DesignerOptions() {
       {/* ── Sidebar ── */}
       <aside className="w-52 flex-shrink-0 space-y-1">
         {CATEGORIES.map((cat) => {
-          const count = options.filter((o) => o.category === cat.id).length
+          const count  = options.filter((o) => o.type === cat.id).length
           const active = activeCategory === cat.id
           return (
             <button
@@ -115,14 +144,18 @@ export default function DesignerOptions() {
               <p className="text-xs text-muted-foreground">{visible.length} option{visible.length !== 1 ? "s" : ""}</p>
             </div>
           </div>
-          <Button size="sm" onClick={openAdd} className="gap-1.5 rounded-lg">
+          <Button size="sm" onClick={openAdd} className="gap-1.5 rounded-lg" disabled={loading}>
             <Plus className="w-3.5 h-3.5" />
             Add Option
           </Button>
         </div>
 
-        {/* Options grid */}
-        {visible.length === 0 ? (
+        {/* Loading */}
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="h-7 w-7 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          </div>
+        ) : visible.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-2xl">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 border ${catMeta.accent} ${catMeta.color}`}>
               {catMeta.icon}
@@ -138,7 +171,7 @@ export default function DesignerOptions() {
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {visible.map((opt) => (
               <div
-                key={opt.id}
+                key={opt.optionId}
                 className="group flex items-center justify-between gap-3 p-4 rounded-xl border border-border/60 bg-card hover:shadow-md hover:border-accent/30 transition-all"
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -150,7 +183,7 @@ export default function DesignerOptions() {
                     <div className="flex items-center gap-1 mt-0.5">
                       <Tag className="w-3 h-3 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">
-                        {opt.price === 0 ? "Included" : `+Rs. ${opt.price.toFixed(2)}`}
+                        {opt.additionalPrice === 0 ? "Included" : `+Rs. ${opt.additionalPrice.toFixed(2)}`}
                       </span>
                     </div>
                   </div>
@@ -163,7 +196,7 @@ export default function DesignerOptions() {
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => handleDelete(opt.id)}
+                    onClick={() => handleDelete(opt.optionId)}
                     className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -208,8 +241,8 @@ export default function DesignerOptions() {
             </div>
             <div className="flex gap-2 pt-1">
               <Button variant="outline" className="flex-1" onClick={() => setDialogOpen(false)}>Cancel</Button>
-              <Button className="flex-1" onClick={handleSave} disabled={!form.name.trim()}>
-                {editingId != null ? "Save Changes" : "Add Option"}
+              <Button className="flex-1" onClick={handleSave} disabled={!form.name.trim() || saving}>
+                {saving ? "Saving…" : editingId != null ? "Save Changes" : "Add Option"}
               </Button>
             </div>
           </div>
