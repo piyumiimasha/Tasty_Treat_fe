@@ -7,6 +7,7 @@ import { getUserInfo } from "@/lib/api/auth"
 import { createDesignRequest } from "@/lib/api/design-requests"
 import { getDesignerOptions, type CustomizationOptionDto } from "@/lib/api/customization-options"
 import { getCustomizationTypes, type CustomizationTypeDto } from "@/lib/api/customization-types"
+import { generateCakePreview } from "@/lib/api/cake-preview"
 import { BASE_PRICE, type CakeDesign, type OptionCategory } from "@/lib/customizer-options"
 import OptionPillGroup from "./option-pill-group"
 import PreviewPanel from "./preview-panel"
@@ -121,42 +122,10 @@ export default function CustomizerShell() {
   const handleGenerate = async () => {
     setIsGenerating(true)
     try {
-      // Resolve optionId → human-readable label for the AI prompt
-      const resolve = (key: string, id: string) =>
-        categories.find((c) => c.key === key)?.options.find((o) => o.id === id)?.label ?? id
-
-      const layerOption = categories.find((c) => c.key === "layers")?.options.find((o) => o.id === design.layers)
-      const layerCount  = layerOption ? parseInt(layerOption.label, 10) || 1 : 1
-
-      const payload = {
-        layers:      layerCount,
-        shape:       resolve("shape",    design.shape),
-        frosting:    resolve("frosting", design.frosting),
-        flavour:     resolve("flavour",  design.flavour),
-        topper:      resolve("topper",   design.topper),
-        color:       design.color ? resolve("color", design.color) : undefined,
-        decorations: design.decorations.map((d) => resolve("decorations", d)),
-        dietary:     design.dietary.map((d) => resolve("dietary", d)),
-        instructions: design.instructions,
-      }
-
-      const res = await fetch("/api/generate-preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-      const data = await res.json()
-      if (data.fallback) {
-        toast({ title: "AI preview not configured", description: "Set PIXAZO_API_KEY in .env.local to enable previews.", variant: "destructive" })
-        return
-      }
-      if (data.error || !data.imageUrl) {
-        toast({ title: "Preview failed", description: data.error ?? "Unknown error", variant: "destructive" })
-        return
-      }
-      setPreviewImageUrl(data.imageUrl)
-    } catch {
-      toast({ title: "Preview failed", description: "Could not reach the preview service.", variant: "destructive" })
+      const blobUrl = await generateCakePreview(design, categories)
+      setPreviewImageUrl(blobUrl)
+    } catch (err: any) {
+      toast({ title: "Preview failed", description: err?.message ?? "Could not generate preview.", variant: "destructive" })
     } finally {
       setIsGenerating(false)
     }
@@ -199,18 +168,8 @@ export default function CustomizerShell() {
         .filter(Boolean)
         .join("\n")
 
-      let imageFile: File | undefined
-      if (previewImageUrl) {
-        try {
-          const imgRes = await fetch(previewImageUrl)
-          const blob = await imgRes.blob()
-          imageFile = new File([blob], "cake-preview.webp", { type: blob.type || "image/webp" })
-        } catch {
-          // Submit without image if fetch fails
-        }
-      }
-
-      await createDesignRequest(info.name, message, imageFile)
+      // previewImageUrl is already an Azure blob — pass it directly, no re-upload needed
+      await createDesignRequest(info.name, message, undefined, previewImageUrl ?? undefined)
       toast({ title: "Request submitted!", description: "We'll review your design and be in touch soon." })
       router.push("/orders")
     } catch (err: any) {

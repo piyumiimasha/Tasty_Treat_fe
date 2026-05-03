@@ -31,11 +31,13 @@ export async function createDesignRequest(
   customerName: string,
   message: string,
   imageFile?: File,
+  imageUrl?: string,
 ): Promise<DesignRequestDto> {
   const formData = new FormData();
   formData.append('customerName', customerName);
   if (message) formData.append('message', message);
-  if (imageFile) formData.append('image', imageFile);
+  if (imageUrl) formData.append('imageUrl', imageUrl);
+  else if (imageFile) formData.append('image', imageFile);
 
   const response = await fetch(`${API_BASE_URL}/api/DesignRequests`, {
     method: 'POST',
