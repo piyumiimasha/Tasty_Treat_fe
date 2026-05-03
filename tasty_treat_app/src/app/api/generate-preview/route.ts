@@ -11,20 +11,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ imageUrl: null, fallback: true, message: "AI preview not configured." })
   }
 
-  const { layers, shape, frosting, flavour, topper, dietary, instructions } = await req.json()
+  const { layers, shape, frosting, flavour, topper, color, decorations, dietary, instructions } = await req.json()
 
-  const topperStr  = topper && topper.toLowerCase() !== "none"
+  const topperStr      = topper && topper.toLowerCase() !== "none"
     ? `, decorated with ${topper}`
     : ""
-  const dietaryStr = Array.isArray(dietary) && dietary.length > 0
+  const colorStr       = color ? `, in ${color} color theme` : ""
+  const decorStr       = Array.isArray(decorations) && decorations.length > 0
+    ? `, with ${decorations.join(" and ")} decorations`
+    : ""
+  const dietaryStr     = Array.isArray(dietary) && dietary.length > 0
     ? `, ${dietary.join(" and ")} friendly`
     : ""
-  const instrStr   = instructions ? `. Additional details: ${instructions}` : ""
+  const instrStr       = instructions ? `. Additional details: ${instructions}` : ""
 
   const prompt =
     `A stunning ${layers}-layer ${shape}-shaped celebration cake ` +
     `with ${frosting} frosting and ${flavour} flavour` +
-    `${topperStr}${dietaryStr}${instrStr}. ` +
+    `${topperStr}${colorStr}${decorStr}${dietaryStr}${instrStr}. ` +
     `Photorealistic professional bakery photography, elegant presentation, ` +
     `soft natural studio lighting, pure white background, ultra high detail.`
 

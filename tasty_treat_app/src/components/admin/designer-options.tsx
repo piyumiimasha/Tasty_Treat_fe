@@ -14,47 +14,63 @@ import {
   deleteDesignerOption,
   type CustomizationOptionDto,
 } from "@/lib/api/customization-options"
+import {
+  getCustomizationTypes,
+  type CustomizationTypeDto,
+} from "@/lib/api/customization-types"
 
-const CATEGORIES: { id: string; label: string; icon: React.ReactNode; color: string; accent: string }[] = [
-  { id: "shapes",      label: "Shapes",      icon: <Circle className="w-4 h-4" />,    color: "text-violet-600",  accent: "bg-violet-50 border-violet-200"  },
-  { id: "layers",      label: "Layers",      icon: <Layers className="w-4 h-4" />,    color: "text-blue-600",    accent: "bg-blue-50 border-blue-200"      },
-  { id: "frosting",    label: "Frosting",    icon: <Droplets className="w-4 h-4" />,  color: "text-pink-600",    accent: "bg-pink-50 border-pink-200"      },
-  { id: "flavour",     label: "Flavour",     icon: <Cake className="w-4 h-4" />,      color: "text-rose-600",    accent: "bg-rose-50 border-rose-200"      },
-  { id: "colors",      label: "Colors",      icon: <Palette className="w-4 h-4" />,   color: "text-orange-600",  accent: "bg-orange-50 border-orange-200"  },
-  { id: "toppers",     label: "Toppers",     icon: <Star className="w-4 h-4" />,      color: "text-amber-600",   accent: "bg-amber-50 border-amber-200"    },
-  { id: "decorations", label: "Decorations", icon: <Sparkles className="w-4 h-4" />, color: "text-teal-600",    accent: "bg-teal-50 border-teal-200"      },
-  { id: "dietary",     label: "Dietary",     icon: <Leaf className="w-4 h-4" />,      color: "text-green-600",   accent: "bg-green-50 border-green-200"    },
-]
+// Static icon/colour metadata keyed by type.name
+const TYPE_META: Record<string, { icon: React.ReactNode; color: string; accent: string }> = {
+  shapes:      { icon: <Circle className="w-4 h-4" />,    color: "text-violet-600",  accent: "bg-violet-50 border-violet-200"  },
+  layers:      { icon: <Layers className="w-4 h-4" />,    color: "text-blue-600",    accent: "bg-blue-50 border-blue-200"      },
+  frosting:    { icon: <Droplets className="w-4 h-4" />,  color: "text-pink-600",    accent: "bg-pink-50 border-pink-200"      },
+  flavour:     { icon: <Cake className="w-4 h-4" />,      color: "text-rose-600",    accent: "bg-rose-50 border-rose-200"      },
+  colors:      { icon: <Palette className="w-4 h-4" />,   color: "text-orange-600",  accent: "bg-orange-50 border-orange-200"  },
+  toppers:     { icon: <Star className="w-4 h-4" />,      color: "text-amber-600",   accent: "bg-amber-50 border-amber-200"    },
+  decorations: { icon: <Sparkles className="w-4 h-4" />,  color: "text-teal-600",    accent: "bg-teal-50 border-teal-200"      },
+  dietary:     { icon: <Leaf className="w-4 h-4" />,      color: "text-green-600",   accent: "bg-green-50 border-green-200"    },
+}
+
+const DEFAULT_META = { icon: <Tag className="w-4 h-4" />, color: "text-muted-foreground", accent: "bg-muted border-border" }
 
 interface FormState { name: string; price: string }
 const EMPTY_FORM: FormState = { name: "", price: "0" }
 
 export default function DesignerOptions() {
   const { toast } = useToast()
-  const [options, setOptions]               = useState<CustomizationOptionDto[]>([])
-  const [loading, setLoading]               = useState(true)
-  const [activeCategory, setActiveCategory] = useState("shapes")
-  const [dialogOpen, setDialogOpen]         = useState(false)
-  const [editingId, setEditingId]           = useState<number | null>(null)
-  const [form, setForm]                     = useState<FormState>(EMPTY_FORM)
-  const [saving, setSaving]                 = useState(false)
-
-  const catMeta = CATEGORIES.find((c) => c.id === activeCategory)!
-  const visible = options.filter((o) => o.type === activeCategory)
+  const [types, setTypes]                     = useState<CustomizationTypeDto[]>([])
+  const [options, setOptions]                 = useState<CustomizationOptionDto[]>([])
+  const [loading, setLoading]                 = useState(true)
+  const [activeTypeId, setActiveTypeId]       = useState<number | null>(null)
+  const [dialogOpen, setDialogOpen]           = useState(false)
+  const [editingId, setEditingId]             = useState<number | null>(null)
+  const [form, setForm]                       = useState<FormState>(EMPTY_FORM)
+  const [saving, setSaving]                   = useState(false)
 
   const load = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await getDesignerOptions()
-      setOptions(data)
+      const [fetchedTypes, fetchedOptions] = await Promise.all([
+        getCustomizationTypes(),
+        getDesignerOptions(),
+      ])
+      setTypes(fetchedTypes)
+      setOptions(fetchedOptions)
+      if (fetchedTypes.length > 0 && activeTypeId === null) {
+        setActiveTypeId(fetchedTypes[0].typeId)
+      }
     } catch {
       toast({ title: "Error", description: "Failed to load designer options.", variant: "destructive" })
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [toast, activeTypeId])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const activeType = types.find((t) => t.typeId === activeTypeId)
+  const catMeta    = activeType ? (TYPE_META[activeType.name] ?? DEFAULT_META) : DEFAULT_META
+  const visible    = options.filter((o) => o.typeId === activeTypeId)
 
   const openAdd = () => {
     setEditingId(null)
@@ -71,7 +87,7 @@ export default function DesignerOptions() {
   const handleSave = async () => {
     const name  = form.name.trim()
     const price = parseFloat(form.price) || 0
-    if (!name) return
+    if (!name || activeTypeId === null) return
 
     setSaving(true)
     try {
@@ -79,7 +95,7 @@ export default function DesignerOptions() {
         const updated = await updateDesignerOption(editingId, { name, additionalPrice: price })
         setOptions((prev) => prev.map((o) => o.optionId === editingId ? updated : o))
       } else {
-        const created = await createDesignerOption({ name, type: activeCategory, additionalPrice: price })
+        const created = await createDesignerOption({ name, typeId: activeTypeId, additionalPrice: price })
         setOptions((prev) => [...prev, created])
       }
       setDialogOpen(false)
@@ -104,13 +120,14 @@ export default function DesignerOptions() {
 
       {/* ── Sidebar ── */}
       <aside className="w-52 flex-shrink-0 space-y-1">
-        {CATEGORIES.map((cat) => {
-          const count  = options.filter((o) => o.type === cat.id).length
-          const active = activeCategory === cat.id
+        {types.map((type) => {
+          const meta   = TYPE_META[type.name] ?? DEFAULT_META
+          const count  = options.filter((o) => o.typeId === type.typeId).length
+          const active = activeTypeId === type.typeId
           return (
             <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
+              key={type.typeId}
+              onClick={() => setActiveTypeId(type.typeId)}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 active
                   ? "bg-accent text-white shadow-sm shadow-accent/20"
@@ -118,8 +135,8 @@ export default function DesignerOptions() {
               }`}
             >
               <span className="flex items-center gap-2.5">
-                <span className={active ? "text-white" : cat.color}>{cat.icon}</span>
-                {cat.label}
+                <span className={active ? "text-white" : meta.color}>{meta.icon}</span>
+                {type.name.charAt(0).toUpperCase() + type.name.slice(1)}
               </span>
               <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
                 active ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
@@ -133,24 +150,22 @@ export default function DesignerOptions() {
 
       {/* ── Main panel ── */}
       <div className="flex-1 min-w-0">
-        {/* Panel header */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center border ${catMeta.accent} ${catMeta.color}`}>
               {catMeta.icon}
             </div>
             <div>
-              <h3 className="font-semibold text-foreground leading-tight">{catMeta.label}</h3>
+              <h3 className="font-semibold text-foreground leading-tight">{activeType ? activeType.name.charAt(0).toUpperCase() + activeType.name.slice(1) : "—"}</h3>
               <p className="text-xs text-muted-foreground">{visible.length} option{visible.length !== 1 ? "s" : ""}</p>
             </div>
           </div>
-          <Button size="sm" onClick={openAdd} className="gap-1.5 rounded-lg" disabled={loading}>
+          <Button size="sm" onClick={openAdd} className="gap-1.5 rounded-lg" disabled={loading || activeTypeId === null}>
             <Plus className="w-3.5 h-3.5" />
             Add Option
           </Button>
         </div>
 
-        {/* Loading */}
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="h-7 w-7 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -160,7 +175,7 @@ export default function DesignerOptions() {
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 border ${catMeta.accent} ${catMeta.color}`}>
               {catMeta.icon}
             </div>
-            <p className="text-sm font-medium text-foreground mb-1">No {catMeta.label.toLowerCase()} yet</p>
+            <p className="text-sm font-medium text-foreground mb-1">No {activeType?.name.toLowerCase() ?? "options"} yet</p>
             <p className="text-xs text-muted-foreground mb-4">Add your first option to get started</p>
             <Button size="sm" variant="outline" onClick={openAdd} className="gap-1.5">
               <Plus className="w-3.5 h-3.5" />
@@ -212,7 +227,7 @@ export default function DesignerOptions() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>{editingId != null ? "Edit" : "Add"} {catMeta.label} Option</DialogTitle>
+            <DialogTitle>{editingId != null ? "Edit" : "Add"} {activeType ? activeType.name.charAt(0).toUpperCase() + activeType.name.slice(1) : ""} Option</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-1">
             <div>

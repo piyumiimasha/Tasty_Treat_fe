@@ -27,6 +27,8 @@ export default function PriceSummaryCard({ breakdown }: PriceSummaryCardProps) {
         <PriceLine label="Shape Surcharge" amount={breakdown.shapeSurcharge} muted />
         <PriceLine label="Flavours & Fillings" amount={breakdown.flavoursFillings} muted />
         <PriceLine label="Toppers" amount={breakdown.toppers} muted />
+        <PriceLine label="Color" amount={breakdown.colorSurcharge} muted />
+        <PriceLine label="Decorations" amount={breakdown.decorationsCost} muted />
         <PriceLine label="Dietary Options" amount={breakdown.dietaryOptions} muted />
 
         <div className="border-t border-border pt-2 mt-2 space-y-1.5">

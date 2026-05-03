@@ -3,7 +3,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079
 export interface CustomizationOptionDto {
   optionId: number
   name: string
-  type: string
+  typeId: number
+  typeName: string
   additionalPrice: number
   updatedAt: string
 }
@@ -22,7 +23,7 @@ export async function getDesignerOptions(): Promise<CustomizationOptionDto[]> {
   return res.json()
 }
 
-export async function createDesignerOption(data: { name: string; type: string; additionalPrice: number }): Promise<CustomizationOptionDto> {
+export async function createDesignerOption(data: { name: string; typeId: number; additionalPrice: number }): Promise<CustomizationOptionDto> {
   const res = await fetch(`${API_BASE_URL}/api/CustomizationOptions`, {
     method: 'POST',
     headers: headers(),
@@ -32,7 +33,7 @@ export async function createDesignerOption(data: { name: string; type: string; a
   return res.json()
 }
 
-export async function updateDesignerOption(id: number, data: { name?: string; type?: string; additionalPrice?: number }): Promise<CustomizationOptionDto> {
+export async function updateDesignerOption(id: number, data: { name?: string; typeId?: number; additionalPrice?: number }): Promise<CustomizationOptionDto> {
   const res = await fetch(`${API_BASE_URL}/api/CustomizationOptions/${id}`, {
     method: 'PUT',
     headers: headers(),
