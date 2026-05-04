@@ -46,8 +46,8 @@ export default function CustomizationRequests() {
       return
     }
     try {
-      const updated = await updateDesignRequestStatus(id, "approved", price)
-      setRequests((prev) => prev.map((r) => (r.designRequestId === id ? updated : r)))
+      await updateDesignRequestStatus(id, "approved", price)
+      setRequests((prev) => prev.filter((r) => r.designRequestId !== id))
       toast({ title: "Approved", description: "Request approved and order created." })
     } catch {
       toast({ title: "Error", description: "Failed to update status", variant: "destructive" })
@@ -56,8 +56,9 @@ export default function CustomizationRequests() {
 
   const filteredRequests = requests.filter(
     (req) =>
-      req.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (req.message ?? "").toLowerCase().includes(searchTerm.toLowerCase()),
+      req.status !== "approved" &&
+      (req.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (req.message ?? "").toLowerCase().includes(searchTerm.toLowerCase())),
   )
 
   return (
