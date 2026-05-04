@@ -169,6 +169,48 @@ export function isAdmin(): boolean {
   return userInfo?.role?.toLowerCase() === 'admin';
 }
 
+export interface UserProfileDto {
+  userId: number
+  name: string
+  email: string
+  role: string
+  phoneNo?: string
+  address?: string
+  createdAt: string
+}
+
+export async function getUserProfile(userId: number): Promise<UserProfileDto> {
+  const token = getAuthToken()
+  const res = await fetch(`${API_BASE_URL}/api/Users/${userId}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
+  if (!res.ok) throw new ApiError(res.status, 'Failed to fetch profile')
+  return res.json()
+}
+
+export async function updateUserProfile(
+  userId: number,
+  data: { name?: string; email?: string; phoneNo?: string; address?: string; password?: string }
+): Promise<UserProfileDto> {
+  const token = getAuthToken()
+  const res = await fetch(`${API_BASE_URL}/api/Users/${userId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new ApiError(res.status, text || 'Failed to update profile')
+  }
+  return res.json()
+}
+
 // Check if current user has a specific role
 export function hasRole(role: string): boolean {
   const userInfo = getUserInfo();

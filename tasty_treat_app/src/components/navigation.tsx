@@ -226,9 +226,11 @@ export default function Navigation() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="rounded-lg cursor-pointer">
-                    <User className="w-4 h-4 mr-2 text-muted-foreground" />
-                    Profile
+                  <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+                    <Link href="/profile">
+                      <User className="w-4 h-4 mr-2 text-muted-foreground" />
+                      Profile
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
