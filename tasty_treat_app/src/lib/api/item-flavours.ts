@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079';
+﻿const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079';
 
 export interface ItemFlavourDto {
   itemFlavourId: number;
@@ -19,7 +19,7 @@ export interface UpdateItemFlavourDto {
 
 function getAuthToken(): string | null {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('token');
+    return localStorage.getItem('authToken');
   }
   return null;
 }
@@ -69,3 +69,4 @@ export async function deleteFlavour(itemId: number, id: number): Promise<void> {
   });
   if (!response.ok) throw new Error('Failed to delete flavour');
 }
+

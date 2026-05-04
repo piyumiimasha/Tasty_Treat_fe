@@ -2,16 +2,26 @@
 
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
-import { Trash2, Plus, Minus, ShoppingCart, ArrowRight, Package } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Trash2, Plus, Minus, ShoppingCart, ArrowRight, Package, Loader2, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getCart, updateCartItemQuantity, removeCartItem, CartItem } from "@/lib/api/cart"
-import { getUserInfo } from "@/lib/api/auth"
+import { getUserInfo, getUserProfile } from "@/lib/api/auth"
+import { calculateDeliveryFee, RATE_PER_KM } from "@/lib/delivery"
+import { useToast } from "@/hooks/use-toast"
 
 export default function CartPage() {
+  const router = useRouter()
+  const { toast } = useToast()
+
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [quoteId, setQuoteId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<number | null>(null)
+  const [calculatingFee, setCalculatingFee] = useState(false)
+  const [deliveryFee, setDeliveryFee] = useState<number | null>(null)
+  const [distanceKm, setDistanceKm] = useState<number | null>(null)
+  const [customerAddress, setCustomerAddress] = useState<string>("")
 
   const loadCart = useCallback(async (uid: number) => {
     const { quoteId: qid, items } = await getCart(uid)
@@ -23,7 +33,11 @@ export default function CartPage() {
     const info = getUserInfo()
     if (!info) { setLoading(false); return }
     setUserId(info.userId)
-    loadCart(info.userId).finally(() => setLoading(false))
+
+    Promise.all([
+      loadCart(info.userId),
+      getUserProfile(info.userId).then(p => { if (p.address) setCustomerAddress(p.address) }).catch(() => {}),
+    ]).finally(() => setLoading(false))
 
     const onUpdate = () => loadCart(info.userId)
     window.addEventListener("cart-updated", onUpdate)
@@ -32,16 +46,38 @@ export default function CartPage() {
 
   const handleUpdateQuantity = async (cartItemId: string, quantity: number) => {
     if (!userId) return
-    if (quantity <= 0) {
-      await removeCartItem(userId, cartItemId)
-    } else {
-      await updateCartItemQuantity(userId, cartItemId, quantity)
-    }
+    if (quantity <= 0) await removeCartItem(userId, cartItemId)
+    else await updateCartItemQuantity(userId, cartItemId, quantity)
   }
 
   const handleRemove = async (cartItemId: string) => {
     if (!userId) return
     await removeCartItem(userId, cartItemId)
+  }
+
+  const handleProceedToCheckout = async () => {
+    if (!customerAddress) {
+      // No address saved — go straight to checkout, fee calculated there
+      router.push(`/checkout?quoteId=${quoteId}`)
+      return
+    }
+
+    setCalculatingFee(true)
+    try {
+      const { fee, distanceKm: km } = await calculateDeliveryFee(customerAddress)
+      setDeliveryFee(fee)
+      setDistanceKm(km)
+      router.push(`/checkout?quoteId=${quoteId}&deliveryFee=${fee}&distanceKm=${km}`)
+    } catch {
+      toast({
+        title: "Could not calculate delivery fee",
+        description: "Update your address in Profile or we'll calculate it at checkout.",
+        variant: "destructive",
+      })
+      router.push(`/checkout?quoteId=${quoteId}`)
+    } finally {
+      setCalculatingFee(false)
+    }
   }
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -179,7 +215,7 @@ export default function CartPage() {
 
               <div className="space-y-2.5 pb-5 border-b border-border/60 mb-5">
                 <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Subtotal</span>
+                  <span>Total</span>
                   <span className="font-medium text-foreground">Rs. {subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
@@ -188,21 +224,45 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Delivery</span>
-                  <span className="text-green-600 font-medium">Free</span>
+                  <span className="text-xs text-muted-foreground italic">calculated at checkout</span>
                 </div>
               </div>
 
+              {/* Delivery address hint */}
+              {customerAddress ? (
+                <div className="flex items-start gap-2 mb-4 p-3 rounded-xl bg-muted/50 text-xs text-muted-foreground">
+                  <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  <span>Delivering to: <span className="text-foreground font-medium">{customerAddress}</span><br />Rs. {RATE_PER_KM}/km applies.</span>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 mb-4 p-3 rounded-xl bg-muted/50 text-xs text-muted-foreground">
+                  <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  <span>Add your address in <Link href="/profile" className="underline text-primary">Profile</Link> for a delivery estimate. Rs. {RATE_PER_KM}/km.</span>
+                </div>
+              )}
+
               <div className="flex justify-between items-center mb-6">
-                <span className="text-base font-semibold text-foreground">Total</span>
+                <span className="text-base font-semibold text-foreground"></span>
                 <span className="text-2xl font-bold text-primary font-serif">Rs. {total.toFixed(2)}</span>
               </div>
 
-              <Link href={`/checkout?quoteId=${quoteId}`} className="block">
-                <Button className="w-full h-12 rounded-xl bg-accent hover:bg-accent/90 text-white font-semibold shadow-md shadow-accent/25 gap-2">
-                  Proceed to Checkout
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
+              <Button
+                onClick={handleProceedToCheckout}
+                disabled={calculatingFee}
+                className="w-full h-12 rounded-xl bg-accent hover:bg-accent/90 text-white font-semibold shadow-md shadow-accent/25 gap-2"
+              >
+                {calculatingFee ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Calculating delivery…
+                  </>
+                ) : (
+                  <>
+                    Proceed to Checkout
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </Button>
 
               <Link href="/" className="block mt-3">
                 <Button variant="outline" className="w-full rounded-xl border-border/70 text-muted-foreground hover:text-foreground">

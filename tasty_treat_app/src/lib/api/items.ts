@@ -1,4 +1,4 @@
-// API base URL - update this to match your backend URL
+﻿// API base URL - update this to match your backend URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079';
 
 // TypeScript interfaces matching backend DTOs
@@ -39,7 +39,7 @@ export class ApiError extends Error {
 // Helper function to get auth token
 function getAuthToken(): string | null {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('token');
+    return localStorage.getItem('authToken');
   }
   return null;
 }
@@ -293,3 +293,4 @@ export async function deleteItemImage(id: number): Promise<ItemDto> {
     throw new Error('Network error: Unable to delete image');
   }
 }
+

@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079';
+﻿const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079';
 
 export interface ChatMsgDto {
   msgId: number;
@@ -19,7 +19,7 @@ export interface ConversationUserDto {
 }
 
 function getAuthToken(): string | null {
-  if (typeof window !== 'undefined') return localStorage.getItem('token');
+  if (typeof window !== 'undefined') return localStorage.getItem('authToken');
   return null;
 }
 
@@ -58,3 +58,4 @@ export async function sendMessage(senderId: number, msgTxt: string, recipientId?
   if (!res.ok) throw new Error('Failed to send message');
   return res.json();
 }
+

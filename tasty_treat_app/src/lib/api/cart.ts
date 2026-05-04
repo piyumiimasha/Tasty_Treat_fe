@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079'
+﻿const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079'
 
 export interface CartItem {
   cartItemId: string  // "{itemId}-{size}-{flavor}"
@@ -12,7 +12,7 @@ export interface CartItem {
 }
 
 function headers(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -115,3 +115,4 @@ export async function convertCartToOrder(quoteId: number, orderId: number): Prom
 
   window.dispatchEvent(new Event('cart-updated'))
 }
+

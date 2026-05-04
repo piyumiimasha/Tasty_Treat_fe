@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079'
+﻿const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079'
 
 export interface OrderDto {
   orderId: number
@@ -45,14 +45,14 @@ export interface CreateOrderItemDto {
 }
 
 function headers(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
 }
 
-// ── Orders ────────────────────────────────────────────────────────────────────
+// â”€â”€ Orders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function getAllOrders(): Promise<OrderDto[]> {
   const res = await fetch(`${API_BASE_URL}/api/Orders`, { headers: headers() })
@@ -106,7 +106,7 @@ export async function deleteOrder(id: number): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete order')
 }
 
-// ── Order Items ───────────────────────────────────────────────────────────────
+// â”€â”€ Order Items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function getOrderItems(orderId: number): Promise<OrderItemDto[]> {
   const res = await fetch(`${API_BASE_URL}/api/OrderItems/order/${orderId}`, { headers: headers() })
@@ -123,3 +123,4 @@ export async function createOrderItem(dto: CreateOrderItemDto): Promise<OrderIte
   if (!res.ok) throw new Error('Failed to create order item')
   return res.json()
 }
+

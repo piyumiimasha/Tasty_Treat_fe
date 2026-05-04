@@ -1,21 +1,22 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { CheckCircle2, Truck, CreditCard } from "lucide-react"
+import { CheckCircle2, Truck, CreditCard, Loader2, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { getCart, CartItem, convertCartToOrder } from "@/lib/api/cart"
-import { getUserInfo } from "@/lib/api/auth"
+import { getUserInfo, getUserProfile } from "@/lib/api/auth"
+import { calculateDeliveryFee, RATE_PER_KM } from "@/lib/delivery"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://localhost:55079"
 
 function headers(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null
   return {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
 }
@@ -23,18 +24,27 @@ function headers(): HeadersInit {
 export default function CheckoutPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const quoteId = searchParams.get('quoteId') ? Number(searchParams.get('quoteId')) : null
+  const quoteId = searchParams.get("quoteId") ? Number(searchParams.get("quoteId")) : null
 
   const [step, setStep] = useState<"shipping" | "payment" | "confirmation">("shipping")
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [orderId, setOrderId] = useState<number | null>(null)
   const [placing, setPlacing] = useState(false)
+  const [deliveryFee, setDeliveryFee] = useState<number>(
+    Number(searchParams.get("deliveryFee") ?? 0)
+  )
+  const [distanceKm, setDistanceKm] = useState<number | null>(
+    searchParams.get("distanceKm") ? Number(searchParams.get("distanceKm")) : null
+  )
+  const [calculatingFee, setCalculatingFee] = useState(false)
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", email: "", phone: "",
     address: "", city: "", state: "", zip: "",
     cardNumber: "", cardName: "", expiry: "", cvc: "",
     deliveryDate: "",
   })
+
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
   const loadCart = useCallback(async () => {
     const info = getUserInfo()
@@ -43,7 +53,43 @@ export default function CheckoutPage() {
     setCartItems(items)
   }, [])
 
-  useEffect(() => { loadCart() }, [loadCart])
+  useEffect(() => {
+    loadCart()
+    const info = getUserInfo()
+    if (!info) return
+    getUserProfile(info.userId).then((p) => {
+      setFormData((f) => ({
+        ...f,
+        firstName: p.name.split(" ")[0] ?? "",
+        lastName: p.name.split(" ").slice(1).join(" ") ?? "",
+        email: p.email,
+        phone: p.phoneNo ?? "",
+        address: p.address ?? "",
+      }))
+    }).catch(() => {})
+  }, [loadCart])
+
+  // Recalculate delivery fee when address fields change (debounced)
+  useEffect(() => {
+    const fullAddress = [formData.address, formData.city, formData.state].filter(Boolean).join(", ")
+    if (!fullAddress.trim()) return
+
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      setCalculatingFee(true)
+      try {
+        const { fee, distanceKm: km } = await calculateDeliveryFee(fullAddress)
+        setDeliveryFee(fee)
+        setDistanceKm(km)
+      } catch (err) {
+        console.error("[delivery fee]", err)
+      } finally {
+        setCalculatingFee(false)
+      }
+    }, 1000)
+
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [formData.address, formData.city, formData.state])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -56,31 +102,29 @@ export default function CheckoutPage() {
 
     const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0)
     const tax = subtotal * 0.1
-    const total = Math.round((subtotal + tax) * 100) / 100
+    const total = Math.round((subtotal + tax + deliveryFee) * 100) / 100
 
     try {
       setPlacing(true)
 
-      // 1. Create the order
       const orderRes = await fetch(`${API_BASE_URL}/api/Orders`, {
-        method: 'POST',
+        method: "POST",
         headers: headers(),
         body: JSON.stringify({
           customerId: info.userId,
-          status: 'Pending',
-          deliveryAddress: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`,
-          specialInstructions: '',
+          status: "Pending",
+          deliveryAddress: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`.trim(),
+          specialInstructions: "",
           totalAmount: total,
         }),
       })
-      if (!orderRes.ok) throw new Error('Failed to create order')
+      if (!orderRes.ok) throw new Error("Failed to create order")
       const order = await orderRes.json()
 
-      // 2. Create order items
       await Promise.all(
         cartItems.map((item) =>
           fetch(`${API_BASE_URL}/api/OrderItems`, {
-            method: 'POST',
+            method: "POST",
             headers: headers(),
             body: JSON.stringify({
               orderId: order.orderId,
@@ -93,9 +137,7 @@ export default function CheckoutPage() {
         )
       )
 
-      // 3. Mark the quote as converted
       await convertCartToOrder(quoteId, order.orderId)
-
       setOrderId(order.orderId)
       setStep("confirmation")
     } catch {
@@ -107,7 +149,7 @@ export default function CheckoutPage() {
 
   const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0)
   const tax = subtotal * 0.1
-  const total = subtotal + tax
+  const total = subtotal + tax + deliveryFee
 
   return (
     <main className="min-h-screen bg-background">
@@ -220,7 +262,7 @@ export default function CheckoutPage() {
                     <span className="font-semibold">#ORD-{orderId}</span>
                   </p>
                 )}
-                <Button onClick={() => router.push('/orders')} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                <Button onClick={() => router.push("/orders")} className="bg-primary text-primary-foreground hover:bg-primary/90">
                   Track Your Order
                 </Button>
               </Card>
@@ -243,20 +285,40 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
-              <div className="space-y-2 mb-6">
-                <div className="flex justify-between text-foreground">
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between text-sm text-foreground">
                   <span>Subtotal</span>
                   <span>Rs. {subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-foreground">
+                <div className="flex justify-between text-sm text-foreground">
                   <span>Tax (10%)</span>
                   <span>Rs. {tax.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-foreground">
-                  <span>Delivery</span>
-                  <span className="text-green-600">Free</span>
+                <div className="flex justify-between text-sm text-foreground">
+                  <span className="flex items-center gap-1">
+                    Delivery
+                    {distanceKm !== null && (
+                      <span className="text-xs text-muted-foreground">({distanceKm} km)</span>
+                    )}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    {calculatingFee ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : deliveryFee > 0 ? (
+                      `Rs. ${deliveryFee.toLocaleString()}`
+                    ) : (
+                      <span className="text-muted-foreground text-xs italic">enter address</span>
+                    )}
+                  </span>
                 </div>
               </div>
+
+              {distanceKm !== null && (
+                <div className="flex items-start gap-2 mb-4 p-2.5 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+                  <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  <span>Rs. {RATE_PER_KM}/km × {distanceKm} km = Rs. {deliveryFee.toLocaleString()}</span>
+                </div>
+              )}
 
               <div className="border-t border-border pt-4 mb-6">
                 <div className="flex justify-between">
@@ -286,7 +348,7 @@ export default function CheckoutPage() {
                   </Button>
                 )}
                 {step === "confirmation" && (
-                  <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => router.push('/')}>
+                  <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => router.push("/")}>
                     Continue Shopping
                   </Button>
                 )}

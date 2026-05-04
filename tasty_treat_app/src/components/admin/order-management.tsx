@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,7 +11,7 @@ import { getAllOrders, updateOrder, OrderDto } from "@/lib/api/orders"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079'
 function headers(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
   return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
 }
 
@@ -90,7 +90,7 @@ export default function OrderManagement() {
         {/* Filters */}
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center">
           <Input
-            placeholder="Search by order ID or customer ID…"
+            placeholder="Search by order ID or customer IDâ€¦"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1"
@@ -149,7 +149,7 @@ export default function OrderManagement() {
                     </td>
                     <td className="px-4 py-3 text-sm font-semibold">Rs. {order.totalAmount.toLocaleString()}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground max-w-[180px] truncate">
-                      {order.deliveryAddress || "—"}
+                      {order.deliveryAddress || "â€”"}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <Select
@@ -181,3 +181,4 @@ export default function OrderManagement() {
     </Card>
   )
 }
+

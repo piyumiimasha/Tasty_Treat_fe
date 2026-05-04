@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,7 +15,7 @@ import {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079'
 
 function headers(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
   return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
 }
 
@@ -332,3 +332,4 @@ export default function StatisticsPage() {
     </main>
   )
 }
+

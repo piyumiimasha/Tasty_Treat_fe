@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079'
+﻿const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079'
 
 export interface CustomizationOptionDto {
   optionId: number
@@ -10,7 +10,7 @@ export interface CustomizationOptionDto {
 }
 
 function headers(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -50,3 +50,4 @@ export async function deleteDesignerOption(id: number): Promise<void> {
   })
   if (!res.ok) throw new Error('Failed to delete option')
 }
+

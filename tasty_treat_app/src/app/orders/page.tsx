@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useCallback } from "react"
 import type React from "react"
@@ -13,7 +13,7 @@ import { CartItem } from "@/lib/api/cart"
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079'
 
 function authHeaders(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
   return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
 }
 
@@ -32,7 +32,7 @@ interface QuoteDto {
   items: string
 }
 
-// Status pipeline — order matters
+// Status pipeline â€” order matters
 const STATUS_PIPELINE = ["Pending", "In Progress", "Baking", "Decoration", "Ready for Pickup", "Completed"]
 
 const STAGES: { name: string; icon: React.ReactNode }[] = [
@@ -170,7 +170,7 @@ export default function OrdersPage() {
                         <div className="mb-6 space-y-2">
                           {items.map((item) => (
                             <div key={item.cartItemId} className="flex items-center justify-between text-sm">
-                              <span className="text-foreground">{item.name} × {item.quantity}</span>
+                              <span className="text-foreground">{item.name} Ã— {item.quantity}</span>
                               <span className="text-muted-foreground">Rs. {(item.price * item.quantity).toLocaleString()}</span>
                             </div>
                           ))}
@@ -225,3 +225,4 @@ export default function OrdersPage() {
     </main>
   )
 }
+
