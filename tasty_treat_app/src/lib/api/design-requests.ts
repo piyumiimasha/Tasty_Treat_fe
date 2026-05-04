@@ -10,7 +10,7 @@ export interface DesignRequestDto {
 }
 
 function getAuthToken(): string | null {
-  if (typeof window !== 'undefined') return localStorage.getItem('token');
+  if (typeof window !== 'undefined') return localStorage.getItem('authToken');
   return null;
 }
 
@@ -32,9 +32,11 @@ export async function createDesignRequest(
   message: string,
   imageFile?: File,
   imageUrl?: string,
+  customerId?: number,
 ): Promise<DesignRequestDto> {
   const formData = new FormData();
   formData.append('customerName', customerName);
+  if (customerId != null) formData.append('customerId', customerId.toString());
   if (message) formData.append('message', message);
   if (imageUrl) formData.append('imageUrl', imageUrl);
   else if (imageFile) formData.append('image', imageFile);
@@ -51,11 +53,11 @@ export async function createDesignRequest(
   return response.json();
 }
 
-export async function updateDesignRequestStatus(id: number, status: string): Promise<DesignRequestDto> {
+export async function updateDesignRequestStatus(id: number, status: string, quotedPrice?: number): Promise<DesignRequestDto> {
   const response = await fetch(`${API_BASE_URL}/api/DesignRequests/${id}/status`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, quotedPrice: quotedPrice ?? null }),
   });
   if (!response.ok) throw new Error('Failed to update status');
   return response.json();

@@ -19,6 +19,7 @@ export default function CustomizationRequests() {
   const [requests, setRequests] = useState<DesignRequestDto[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [quotedPrices, setQuotedPrices] = useState<Record<number, string>>({})
   const { toast } = useToast()
 
   useEffect(() => {
@@ -38,10 +39,16 @@ export default function CustomizationRequests() {
   }
 
   const handleApprove = async (id: number) => {
+    const priceStr = quotedPrices[id]?.trim()
+    const price = priceStr ? parseFloat(priceStr) : undefined
+    if (!priceStr || isNaN(price!)) {
+      toast({ title: "Quoted price required", description: "Enter the quoted price before approving.", variant: "destructive" })
+      return
+    }
     try {
-      const updated = await updateDesignRequestStatus(id, "approved")
+      const updated = await updateDesignRequestStatus(id, "approved", price)
       setRequests((prev) => prev.map((r) => (r.designRequestId === id ? updated : r)))
-      toast({ title: "Approved", description: "Request has been approved." })
+      toast({ title: "Approved", description: "Request approved and order created." })
     } catch {
       toast({ title: "Error", description: "Failed to update status", variant: "destructive" })
     }
@@ -113,6 +120,22 @@ export default function CustomizationRequests() {
 
                   {req.message && (
                     <p className="mb-4 text-sm leading-relaxed text-foreground line-clamp-3">{req.message}</p>
+                  )}
+
+                  {/* Quoted price input for pending requests */}
+                  {req.status === "pending" && (
+                    <div className="mb-3">
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="Quoted price (Rs.)"
+                        value={quotedPrices[req.designRequestId] ?? ""}
+                        onChange={(e) =>
+                          setQuotedPrices((prev) => ({ ...prev, [req.designRequestId]: e.target.value }))
+                        }
+                        className="h-8 text-sm"
+                      />
+                    </div>
                   )}
 
                   {/* Actions */}

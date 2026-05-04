@@ -169,7 +169,7 @@ export default function CustomizerShell() {
         .join("\n")
 
       // previewImageUrl is already an Azure blob — pass it directly, no re-upload needed
-      await createDesignRequest(info.name, message, undefined, previewImageUrl ?? undefined)
+      await createDesignRequest(info.name, message, undefined, previewImageUrl ?? undefined, info.userId)
       toast({ title: "Request submitted!", description: "We'll review your design and be in touch soon." })
       router.push("/orders")
     } catch (err: any) {
