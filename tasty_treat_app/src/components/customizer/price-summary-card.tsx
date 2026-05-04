@@ -1,10 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { PriceBreakdown } from "@/lib/customizer-pricing"
 
-interface PriceSummaryCardProps {
-  breakdown: PriceBreakdown
-}
-
 function PriceLine({ label, amount, muted = false }: { label: string; amount: number; muted?: boolean }) {
   if (amount === 0) return null
   return (
@@ -15,21 +11,17 @@ function PriceLine({ label, amount, muted = false }: { label: string; amount: nu
   )
 }
 
-export default function PriceSummaryCard({ breakdown }: PriceSummaryCardProps) {
+export default function PriceSummaryCard({ breakdown }: { breakdown: PriceBreakdown }) {
   return (
     <Card className="border border-border">
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Price Summary</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        <PriceLine label="Base Size" amount={breakdown.baseSize} muted />
-        <PriceLine label="Extra Layers" amount={breakdown.extraLayers} muted />
-        <PriceLine label="Shape Surcharge" amount={breakdown.shapeSurcharge} muted />
-        <PriceLine label="Flavours & Fillings" amount={breakdown.flavoursFillings} muted />
-        <PriceLine label="Toppers" amount={breakdown.toppers} muted />
-        <PriceLine label="Color" amount={breakdown.colorSurcharge} muted />
-        <PriceLine label="Decorations" amount={breakdown.decorationsCost} muted />
-        <PriceLine label="Dietary Options" amount={breakdown.dietaryOptions} muted />
+        <PriceLine label="Base Price" amount={breakdown.baseSize} muted />
+        {breakdown.lines.map((line) => (
+          <PriceLine key={line.label} label={line.label} amount={line.amount} muted />
+        ))}
 
         <div className="border-t border-border pt-2 mt-2 space-y-1.5">
           <div className="flex justify-between text-sm text-foreground">

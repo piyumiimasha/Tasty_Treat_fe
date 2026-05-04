@@ -16,6 +16,7 @@ import {
 } from "@/lib/api/customization-options"
 import {
   getCustomizationTypes,
+  updateCustomizationType,
   type CustomizationTypeDto,
 } from "@/lib/api/customization-types"
 
@@ -106,6 +107,16 @@ export default function DesignerOptions() {
     }
   }
 
+  const handleToggleMultiSelect = async (type: CustomizationTypeDto) => {
+    try {
+      const updated = await updateCustomizationType(type.typeId, { isMultiSelect: !type.isMultiSelect })
+      setTypes((prev) => prev.map((t) => t.typeId === type.typeId ? { ...t, isMultiSelect: updated.isMultiSelect } : t))
+      toast({ title: "Updated", description: `${type.name} is now ${updated.isMultiSelect ? "multi-select" : "single-select"}.` })
+    } catch {
+      toast({ title: "Error", description: "Failed to update type.", variant: "destructive" })
+    }
+  }
+
   const handleDelete = async (id: number) => {
     try {
       await deleteDesignerOption(id)
@@ -160,10 +171,30 @@ export default function DesignerOptions() {
               <p className="text-xs text-muted-foreground">{visible.length} option{visible.length !== 1 ? "s" : ""}</p>
             </div>
           </div>
-          <Button size="sm" onClick={openAdd} className="gap-1.5 rounded-lg" disabled={loading || activeTypeId === null}>
-            <Plus className="w-3.5 h-3.5" />
-            Add Option
-          </Button>
+          <div className="flex items-center gap-3">
+            {activeType && (
+              <button
+                onClick={() => handleToggleMultiSelect(activeType)}
+                className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
+                  activeType.isMultiSelect
+                    ? "bg-accent/10 border-accent/30 text-accent"
+                    : "bg-muted border-border text-muted-foreground hover:text-foreground"
+                }`}
+                title="Toggle whether customers can pick multiple options in this category"
+              >
+                <span className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${
+                  activeType.isMultiSelect ? "border-accent bg-accent" : "border-muted-foreground"
+                }`}>
+                  {activeType.isMultiSelect && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                </span>
+                Multi-select
+              </button>
+            )}
+            <Button size="sm" onClick={openAdd} className="gap-1.5 rounded-lg" disabled={loading || activeTypeId === null}>
+              <Plus className="w-3.5 h-3.5" />
+              Add Option
+            </Button>
+          </div>
         </div>
 
         {loading ? (

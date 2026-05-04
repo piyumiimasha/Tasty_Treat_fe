@@ -8,7 +8,8 @@ import { createDesignRequest } from "@/lib/api/design-requests"
 import { getDesignerOptions, type CustomizationOptionDto } from "@/lib/api/customization-options"
 import { getCustomizationTypes, type CustomizationTypeDto } from "@/lib/api/customization-types"
 import { generateCakePreview } from "@/lib/api/cake-preview"
-import { BASE_PRICE, type CakeDesign, type OptionCategory } from "@/lib/customizer-options"
+import { calculateBreakdown } from "@/lib/customizer-pricing"
+import { type CakeDesign, type OptionCategory } from "@/lib/customizer-options"
 import OptionPillGroup from "./option-pill-group"
 import PreviewPanel from "./preview-panel"
 import PriceSummaryCard from "./price-summary-card"
@@ -16,62 +17,26 @@ import AdditionalInstructionsDialog from "./additional-instructions-dialog"
 import { Button } from "@/components/ui/button"
 import { Send } from "lucide-react"
 
-// Maps backend type.name → CakeDesign key
-const TYPE_KEY_MAP: Partial<Record<string, keyof CakeDesign>> = {
-  shapes:      "shape",
-  layers:      "layers",
-  frosting:    "frosting",
-  flavour:     "flavour",
-  colors:      "color",
-  toppers:     "topper",
-  decorations: "decorations",
-  dietary:     "dietary",
-}
-
-const MULTI_SELECT = new Set(["dietary", "decorations"])
-
 function buildCategories(
   types: CustomizationTypeDto[],
   options: CustomizationOptionDto[]
 ): OptionCategory[] {
-  return types
-    .map((type) => {
-      const key = TYPE_KEY_MAP[type.name]
-      if (!key) return null
-      return {
-        key,
-        label: type.name.charAt(0).toUpperCase() + type.name.slice(1),
-        typeId: type.typeId,
-        multiSelect: MULTI_SELECT.has(type.name),
-        options: options
-          .filter((o) => o.typeId === type.typeId)
-          .map((o) => ({
-            id: o.optionId.toString(),
-            label: o.name,
-            price: o.additionalPrice,
-          })),
-      } satisfies OptionCategory
-    })
-    .filter((c): c is OptionCategory => c !== null)
-}
-
-const DEFAULT_DESIGN: CakeDesign = {
-  layers:       "",
-  shape:        "",
-  frosting:     "",
-  flavour:      "",
-  topper:       "",
-  color:        "",
-  decorations:  [],
-  dietary:      [],
-  instructions: "",
+  return types.map((type) => ({
+    key: type.name.toLowerCase(),
+    label: type.name.charAt(0).toUpperCase() + type.name.slice(1),
+    typeId: type.typeId,
+    multiSelect: type.isMultiSelect,
+    options: options
+      .filter((o) => o.typeId === type.typeId)
+      .map((o) => ({ id: o.optionId.toString(), label: o.name, price: o.additionalPrice })),
+  }))
 }
 
 export default function CustomizerShell() {
   const router = useRouter()
   const { toast } = useToast()
 
-  const [design, setDesign]             = useState<CakeDesign>(DEFAULT_DESIGN)
+  const [design, setDesign]             = useState<CakeDesign>({ instructions: "" })
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -95,27 +60,12 @@ export default function CustomizerShell() {
 
   const categories = useMemo(() => buildCategories(apiTypes, apiOptions), [apiTypes, apiOptions])
 
-  const breakdown = useMemo(() => {
-    const price = (key: string, id: string) =>
-      categories.find((c) => c.key === key)?.options.find((o) => o.id === id)?.price ?? 0
+  const breakdown = useMemo(
+    () => calculateBreakdown(design, categories),
+    [design, categories]
+  )
 
-    const baseSize        = BASE_PRICE
-    const extraLayers     = price("layers",      design.layers)
-    const shapeSurcharge  = price("shape",       design.shape)
-    const flavoursFillings = price("flavour",     design.flavour)
-    const toppers         = price("topper",      design.topper)
-    const colorSurcharge  = price("color",       design.color)
-    const decorationsCost = design.decorations.reduce((sum, d) => sum + price("decorations", d), 0)
-    const dietaryOptions  = design.dietary.reduce((sum, d) => sum + price("dietary", d), 0)
-
-    const subtotal = baseSize + extraLayers + shapeSurcharge + flavoursFillings + toppers + colorSurcharge + decorationsCost + dietaryOptions
-    const tax      = Math.round(subtotal * 0.1 * 100) / 100
-    const total    = Math.round((subtotal + tax) * 100) / 100
-
-    return { baseSize, extraLayers, shapeSurcharge, flavoursFillings, toppers, colorSurcharge, decorationsCost, dietaryOptions, subtotal, tax, total }
-  }, [design, categories])
-
-  const setField = (key: keyof CakeDesign, value: string | string[]) => {
+  const setField = (key: string, value: string | string[]) => {
     setDesign((prev) => ({ ...prev, [key]: value }))
   }
 
@@ -123,6 +73,7 @@ export default function CustomizerShell() {
     setIsGenerating(true)
     try {
       const blobUrl = await generateCakePreview(design, categories)
+      console.log("[Preview] blob URL received:", blobUrl)
       setPreviewImageUrl(blobUrl)
     } catch (err: any) {
       toast({ title: "Preview failed", description: err?.message ?? "Could not generate preview.", variant: "destructive" })
@@ -141,34 +92,31 @@ export default function CustomizerShell() {
 
     setIsSubmitting(true)
     try {
-      const label = (key: string, id: string) =>
-        categories.find((c) => c.key === key)?.options.find((o) => o.id === id)?.label ?? id
+      const selectionLines = categories
+        .map((cat) => {
+          const val = design[cat.key]
+          if (!val) return null
+          if (Array.isArray(val) && val.length > 0) {
+            const labels = val.map((id) => cat.options.find((o) => o.id === id)?.label ?? id)
+            return `${cat.label}: ${labels.join(", ")}`
+          }
+          if (typeof val === "string" && val) {
+            const label = cat.options.find((o) => o.id === val)?.label ?? val
+            return `${cat.label}: ${label}`
+          }
+          return null
+        })
+        .filter(Boolean)
 
-      const layerLabel      = label("layers",  design.layers)
-      const shapeLabel      = label("shape",   design.shape)
-      const frostingLabel   = label("frosting",design.frosting)
-      const flavourLabel    = label("flavour", design.flavour)
-      const topperLabel     = label("topper",  design.topper)
-      const colorLabel      = design.color ? label("color", design.color) : null
-      const decorLabels     = design.decorations.map((d) => label("decorations", d))
-      const dietaryLabels   = design.dietary.map((d) => label("dietary", d))
-
+      const instructions = design.instructions as string
       const message = [
         `Custom Cake Order — Rs. ${breakdown.total.toLocaleString()}`,
-        layerLabel      ? `Layers: ${layerLabel}`                    : null,
-        shapeLabel      ? `Shape: ${shapeLabel}`                     : null,
-        frostingLabel   ? `Frosting: ${frostingLabel}`               : null,
-        flavourLabel    ? `Flavour: ${flavourLabel}`                  : null,
-        topperLabel     ? `Toppers: ${topperLabel}`                   : null,
-        colorLabel      ? `Color: ${colorLabel}`                      : null,
-        decorLabels.length > 0 ? `Decorations: ${decorLabels.join(", ")}` : null,
-        dietaryLabels.length > 0 ? `Dietary: ${dietaryLabels.join(", ")}` : null,
-        design.instructions ? `Special instructions: ${design.instructions}` : null,
+        ...selectionLines,
+        instructions ? `Special instructions: ${instructions}` : null,
       ]
         .filter(Boolean)
         .join("\n")
 
-      // previewImageUrl is already an Azure blob — pass it directly, no re-upload needed
       await createDesignRequest(info.name, message, undefined, previewImageUrl ?? undefined, info.userId)
       toast({ title: "Request submitted!", description: "We'll review your design and be in touch soon." })
       router.push("/orders")
@@ -206,7 +154,7 @@ export default function CustomizerShell() {
                 <div className="h-7 w-7 animate-spin rounded-full border-4 border-primary border-t-transparent" />
               </div>
             ) : categories.map((cat) => {
-              const value = design[cat.key] as string | string[]
+              const value = design[cat.key] ?? (cat.multiSelect ? [] : "")
               return (
                 <div key={cat.key} className="px-5 py-4">
                   <OptionPillGroup
@@ -222,7 +170,7 @@ export default function CustomizerShell() {
 
             <div className="px-5 py-4">
               <AdditionalInstructionsDialog
-                value={design.instructions}
+                value={(design.instructions as string) ?? ""}
                 onChange={(val) => setField("instructions", val)}
               />
             </div>

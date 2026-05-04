@@ -5,23 +5,13 @@ export interface OptionItem {
 }
 
 export interface OptionCategory {
-  key: keyof CakeDesign
+  key: string     // type.name.toLowerCase() — dynamic, driven by backend
   label: string
   typeId: number
   multiSelect: boolean
   options: OptionItem[]
 }
 
-export interface CakeDesign {
-  layers: string        // optionId of selected layer option
-  shape: string
-  frosting: string
-  flavour: string
-  topper: string
-  color: string
-  decorations: string[]
-  dietary: string[]
-  instructions: string
-}
+export type CakeDesign = Record<string, string | string[]>
 
 export const BASE_PRICE = 2000

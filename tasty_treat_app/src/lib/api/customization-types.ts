@@ -3,10 +3,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079
 export interface CustomizationTypeDto {
   typeId: number
   name: string
+  isMultiSelect: boolean
 }
 
 function headers(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -29,7 +30,7 @@ export async function createCustomizationType(data: { name: string }): Promise<C
   return res.json()
 }
 
-export async function updateCustomizationType(id: number, data: { name?: string }): Promise<CustomizationTypeDto> {
+export async function updateCustomizationType(id: number, data: { name?: string; isMultiSelect?: boolean }): Promise<CustomizationTypeDto> {
   const res = await fetch(`${API_BASE_URL}/api/CustomizationTypes/${id}`, {
     method: 'PUT',
     headers: headers(),

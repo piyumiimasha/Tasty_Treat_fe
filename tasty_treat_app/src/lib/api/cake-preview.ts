@@ -3,7 +3,7 @@ import type { CakeDesign, OptionCategory } from "@/lib/customizer-options"
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079'
 
 function authHeaders(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -19,18 +19,20 @@ export async function generateCakePreview(
   design: CakeDesign,
   categories: OptionCategory[]
 ): Promise<string> {
-  const cat = (key: string) => categories.find((c) => c.key === key)
+  const selectedOptionIds = categories.flatMap((cat) => {
+    const val = design[cat.key]
+    if (Array.isArray(val))
+      return val.map(parseId).filter((n): n is number => n !== undefined)
+    if (typeof val === 'string' && val) {
+      const id = parseId(val)
+      return id !== undefined ? [id] : []
+    }
+    return []
+  })
 
   const payload = {
-    layersOptionId:      parseId(design.layers)   ?? null,
-    shapeOptionId:       parseId(design.shape)    ?? null,
-    frostingOptionId:    parseId(design.frosting)  ?? null,
-    flavourOptionId:     parseId(design.flavour)   ?? null,
-    topperOptionId:      parseId(design.topper)    ?? null,
-    colorOptionId:       design.color ? (parseId(design.color) ?? null) : null,
-    decorationOptionIds: design.decorations.map((d) => parseId(d)).filter((n): n is number => n !== undefined),
-    dietaryOptionIds:    design.dietary.map((d) => parseId(d)).filter((n): n is number => n !== undefined),
-    instructions:        design.instructions || null,
+    selectedOptionIds,
+    instructions: (design.instructions as string) || null,
   }
 
   const res = await fetch(`${API_BASE_URL}/api/CakePreview/generate`, {
