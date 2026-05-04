@@ -28,12 +28,17 @@ function initials(name: string) {
     .slice(0, 2)
 }
 
+// .NET serializes DateTime without 'Z', so we append it to treat as UTC
+function asUtc(iso: string) {
+  return iso.endsWith("Z") || iso.includes("+") ? iso : iso + "Z"
+}
+
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  return new Date(asUtc(iso)).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
 }
 
 function formatDate(iso: string) {
-  const d = new Date(iso)
+  const d = new Date(asUtc(iso))
   const today = new Date()
   if (d.toDateString() === today.toDateString()) return "Today"
   const yesterday = new Date(today)
