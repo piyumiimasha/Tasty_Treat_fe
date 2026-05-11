@@ -48,7 +48,7 @@ function CakeFormFields({ formData, setFormData, imagePreviews, handleImageChang
         <Label htmlFor="category">Category *</Label>
         <select
           id="category"
-          className="w-full rounded-md border border-input bg-background px-3 py-2"
+          className="w-full rounded-md border border-input bg-background px-3 py-2 font-sans text-sm"
           value={formData.category}
           onChange={(e) => setFormData({ ...formData, category: e.target.value })}
         >
