@@ -3,16 +3,15 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Edit, Trash2, Search, X, UtensilsCrossed } from "lucide-react"
+import { Plus, Edit, Trash2, Search, X, UtensilsCrossed, ChevronDown, ChevronUp, Tag, Check } from "lucide-react"
 import { getAllItems, createItem, updateItem, deleteItem } from "@/lib/api/items"
 import { mapItemToCake, mapCakeToCreateItem, mapCakeToUpdateItem, Cake } from "@/lib/mappers/item-mapper"
 import FlavourConfigDialog from "@/components/admin/flavour-config-dialog"
-
-const CATEGORIES = ["Wedding Cakes", "Birthday Cakes", "Cupcakes", "Desserts", "Custom Designs"]
+import { CategoryDto, getCategories, createCategory, updateCategory, deleteCategory } from "@/lib/api/categories"
 
 interface FormData {
   name: string
@@ -29,9 +28,10 @@ interface CakeFormFieldsProps {
   imagePreviews: string[]
   handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   removeImage: () => void
+  categories: CategoryDto[]
 }
 
-function CakeFormFields({ formData, setFormData, imagePreviews, handleImageChange, removeImage }: CakeFormFieldsProps) {
+function CakeFormFields({ formData, setFormData, imagePreviews, handleImageChange, removeImage, categories }: CakeFormFieldsProps) {
   return (
     <div className="space-y-4">
       <div>
@@ -52,8 +52,9 @@ function CakeFormFields({ formData, setFormData, imagePreviews, handleImageChang
           value={formData.category}
           onChange={(e) => setFormData({ ...formData, category: e.target.value })}
         >
-          {CATEGORIES.map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
+          {categories.length === 0 && <option value="">No categories — add one below</option>}
+          {categories.map((cat) => (
+            <option key={cat.categoryId} value={cat.name}>{cat.name}</option>
           ))}
         </select>
       </div>
@@ -120,8 +121,127 @@ function CakeFormFields({ formData, setFormData, imagePreviews, handleImageChang
   )
 }
 
+function CategoryManager({ categories, onRefresh }: { categories: CategoryDto[]; onRefresh: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [newName, setNewName] = useState("")
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingName, setEditingName] = useState("")
+  const [saving, setSaving] = useState(false)
+  const { toast } = useToast()
+
+  const handleAdd = async () => {
+    if (!newName.trim()) return
+    setSaving(true)
+    try {
+      await createCategory(newName.trim())
+      setNewName("")
+      onRefresh()
+      toast({ title: "Category added" })
+    } catch {
+      toast({ title: "Error", description: "Failed to add category.", variant: "destructive" })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleUpdate = async (id: number) => {
+    if (!editingName.trim()) return
+    setSaving(true)
+    try {
+      await updateCategory(id, editingName.trim())
+      setEditingId(null)
+      onRefresh()
+      toast({ title: "Category updated" })
+    } catch {
+      toast({ title: "Error", description: "Failed to update category.", variant: "destructive" })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Delete this category?")) return
+    try {
+      await deleteCategory(id)
+      onRefresh()
+      toast({ title: "Category deleted" })
+    } catch {
+      toast({ title: "Error", description: "Failed to delete category.", variant: "destructive" })
+    }
+  }
+
+  return (
+    <Card className="border border-border">
+      <CardHeader className="pb-3 cursor-pointer" onClick={() => setOpen((v) => !v)}>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Tag className="w-4 h-4 text-muted-foreground" />
+            Manage Categories
+            <span className="text-sm font-normal text-muted-foreground">({categories.length})</span>
+          </CardTitle>
+          {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+        </div>
+      </CardHeader>
+
+      {open && (
+        <CardContent className="pt-0 space-y-3">
+          {/* Existing categories */}
+          <div className="space-y-2">
+            {categories.map((cat) => (
+              <div key={cat.categoryId} className="flex items-center gap-2">
+                {editingId === cat.categoryId ? (
+                  <>
+                    <Input
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleUpdate(cat.categoryId) }}
+                      className="h-8 flex-1"
+                      autoFocus
+                    />
+                    <Button size="sm" className="h-8 w-8 p-0" onClick={() => handleUpdate(cat.categoryId)} disabled={saving}>
+                      <Check className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setEditingId(null)}>
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex-1 text-sm px-2 py-1 rounded bg-secondary/30 border border-border">{cat.name}</span>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => { setEditingId(cat.categoryId); setEditingName(cat.name) }}>
+                      <Edit className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(cat.categoryId)}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Add new */}
+          <div className="flex gap-2 pt-1 border-t border-border">
+            <Input
+              placeholder="New category name..."
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleAdd() }}
+              className="h-8 flex-1"
+            />
+            <Button size="sm" className="h-8" onClick={handleAdd} disabled={saving || !newName.trim()}>
+              <Plus className="w-3.5 h-3.5 mr-1" /> Add
+            </Button>
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  )
+}
+
 export default function CakeManagement() {
   const [cakes, setCakes] = useState<Cake[]>([])
+  const [categories, setCategories] = useState<CategoryDto[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
@@ -133,7 +253,7 @@ export default function CakeManagement() {
 
   const [formData, setFormData] = useState<FormData>({
     name: "",
-    category: "Wedding Cakes",
+    category: "",
     price: 0,
     size: "",
     flavor: "",
@@ -142,33 +262,37 @@ export default function CakeManagement() {
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
 
-  // Load cakes on mount
   useEffect(() => {
-    loadCakes()
+    loadAll()
   }, [])
 
-  const loadCakes = async () => {
+  const loadCategories = async () => {
+    try {
+      const data = await getCategories()
+      setCategories(data)
+      return data
+    } catch {
+      return []
+    }
+  }
+
+  const loadAll = async () => {
     try {
       setLoading(true)
-      const items = await getAllItems()
-      const cakeData = items.map(mapItemToCake)
-      setCakes(cakeData)
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load cakes. Please try again.",
-        variant: "destructive",
-      })
-      console.error("Failed to load cakes:", error)
+      const [items, cats] = await Promise.all([getAllItems(), getCategories()])
+      setCakes(items.map(mapItemToCake))
+      setCategories(cats)
+    } catch {
+      toast({ title: "Error", description: "Failed to load data.", variant: "destructive" })
     } finally {
       setLoading(false)
     }
   }
 
-  const resetForm = () => {
+  const resetForm = (cats = categories) => {
     setFormData({
       name: "",
-      category: "Wedding Cakes",
+      category: cats[0]?.name ?? "",
       price: 0,
       size: "",
       flavor: "",
@@ -180,50 +304,22 @@ export default function CakeManagement() {
 
   const handleAddCake = async () => {
     if (!formData.name || !formData.flavor || !formData.size) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      })
+      toast({ title: "Validation Error", description: "Please fill in all required fields", variant: "destructive" })
       return
     }
-
     try {
       setSubmitting(true)
-
       const newCake: Omit<Cake, "id"> = {
-        name: formData.name,
-        category: formData.category,
-        price: formData.price,
-        size: formData.size,
-        flavor: formData.flavor,
-        rating: 4.5,
-        images: [],
-        videos: [],
+        name: formData.name, category: formData.category, price: formData.price,
+        size: formData.size, flavor: formData.flavor, rating: 0, images: [], videos: [],
       }
-
-      const createDto = mapCakeToCreateItem(newCake)
-      
-      // Pass the first image file to the API (backend only accepts one image)
-      const imageFile = imageFiles.length > 0 ? imageFiles[0] : undefined
-      await createItem(createDto, imageFile)
-
+      await createItem(mapCakeToCreateItem(newCake), imageFiles[0])
       setIsAddDialogOpen(false)
       resetForm()
-      toast({
-        title: "Success",
-        description: "Cake added successfully",
-      })
-
-      // Reload cakes from backend
-      await loadCakes()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add cake. Please try again.",
-        variant: "destructive",
-      })
-      console.error("Failed to add cake:", error)
+      toast({ title: "Success", description: "Cake added successfully" })
+      await loadAll()
+    } catch {
+      toast({ title: "Error", description: "Failed to add cake.", variant: "destructive" })
     } finally {
       setSubmitting(false)
     }
@@ -231,106 +327,52 @@ export default function CakeManagement() {
 
   const handleEditCake = async () => {
     if (!editingCake || !formData.name || !formData.flavor || !formData.size) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      })
+      toast({ title: "Validation Error", description: "Please fill in all required fields", variant: "destructive" })
       return
     }
-
     try {
       setSubmitting(true)
-
       const updatedCake: Partial<Cake> = {
-        name: formData.name,
-        category: formData.category,
-        price: formData.price,
-        size: formData.size,
-        flavor: formData.flavor,
+        name: formData.name, category: formData.category, price: formData.price,
+        size: formData.size, flavor: formData.flavor,
       }
-
-      const updateDto = mapCakeToUpdateItem(updatedCake)
-      
-      // Pass the first image file to the API (backend only accepts one image)
-      const imageFile = imageFiles.length > 0 ? imageFiles[0] : undefined
-      await updateItem(editingCake.id, updateDto, imageFile)
-
+      await updateItem(editingCake.id, mapCakeToUpdateItem(updatedCake), imageFiles[0])
       setIsEditDialogOpen(false)
       setEditingCake(null)
       resetForm()
-      toast({
-        title: "Success",
-        description: "Cake updated successfully",
-      })
-
-      // Reload cakes from backend
-      await loadCakes()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update cake. Please try again.",
-        variant: "destructive",
-      })
-      console.error("Failed to update cake:", error)
+      toast({ title: "Success", description: "Cake updated successfully" })
+      await loadAll()
+    } catch {
+      toast({ title: "Error", description: "Failed to update cake.", variant: "destructive" })
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleDeleteCake = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this cake?")) {
-      return
-    }
-
+    if (!confirm("Are you sure you want to delete this cake?")) return
     try {
       await deleteItem(id)
-      toast({
-        title: "Success",
-        description: "Cake deleted successfully",
-      })
-
-      // Reload cakes from backend
-      await loadCakes()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete cake. Please try again.",
-        variant: "destructive",
-      })
-      console.error("Failed to delete cake:", error)
+      toast({ title: "Success", description: "Cake deleted successfully" })
+      await loadAll()
+    } catch {
+      toast({ title: "Error", description: "Failed to delete cake.", variant: "destructive" })
     }
   }
 
   const openEditDialog = (cake: Cake) => {
     setEditingCake(cake)
-    setFormData({
-      name: cake.name,
-      category: cake.category,
-      price: cake.price,
-      size: cake.size,
-      flavor: cake.flavor,
-      images: cake.images.join(", "),
-    })
+    setFormData({ name: cake.name, category: cake.category, price: cake.price, size: cake.size, flavor: cake.flavor, images: cake.images.join(", ") })
     setImageFiles([])
-    // Show existing image from cake
     setImagePreviews(cake.images.length > 0 ? [cake.images[0]] : [])
     setIsEditDialogOpen(true)
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) {
-      setImageFiles([])
-      setImagePreviews([])
-      return
-    }
-
+    if (!file) { setImageFiles([]); setImagePreviews([]); return }
     setImageFiles([file])
-    
-    // Create preview URL
-    const preview = URL.createObjectURL(file)
-    setImagePreviews([preview])
+    setImagePreviews([URL.createObjectURL(file)])
   }
 
   const filteredCakes = cakes.filter(
@@ -341,11 +383,9 @@ export default function CakeManagement() {
   )
 
   const formProps: CakeFormFieldsProps = {
-    formData,
-    setFormData,
-    imagePreviews,
-    handleImageChange,
+    formData, setFormData, imagePreviews, handleImageChange,
     removeImage: () => { setImageFiles([]); setImagePreviews([]) },
+    categories,
   }
 
   return (
@@ -358,7 +398,7 @@ export default function CakeManagement() {
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={resetForm}>
+            <Button onClick={() => resetForm()}>
               <Plus className="mr-2 h-4 w-4" />
               Add New Cake
             </Button>
@@ -370,16 +410,15 @@ export default function CakeManagement() {
             </DialogHeader>
             <CakeFormFields {...formProps} />
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={submitting}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddCake} disabled={submitting}>
-                {submitting ? "Adding..." : "Add Cake"}
-              </Button>
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={submitting}>Cancel</Button>
+              <Button onClick={handleAddCake} disabled={submitting}>{submitting ? "Adding..." : "Add Cake"}</Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Category Manager */}
+      <CategoryManager categories={categories} onRefresh={loadCategories} />
 
       {/* Search */}
       <div className="relative">
@@ -410,19 +449,13 @@ export default function CakeManagement() {
               </thead>
               <tbody className="divide-y">
                 {loading ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center">
-                      <div className="flex justify-center items-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                      </div>
-                    </td>
-                  </tr>
+                  <tr><td colSpan={7} className="px-4 py-8 text-center">
+                    <div className="flex justify-center items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  </td></tr>
                 ) : filteredCakes.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
-                      No cakes found
-                    </td>
-                  </tr>
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">No cakes found</td></tr>
                 ) : (
                   filteredCakes.map((cake) => (
                     <tr key={cake.id} className="hover:bg-muted/50">
@@ -432,32 +465,16 @@ export default function CakeManagement() {
                       <td className="px-4 py-3 text-sm text-muted-foreground">{cake.size}</td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{cake.flavor}</td>
                       <td className="px-4 py-3 text-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setFlavourDialogCake(cake)}
-                          className="h-8 w-8 p-0 text-accent hover:text-accent"
-                          title="Configure flavours"
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => setFlavourDialogCake(cake)} className="h-8 w-8 p-0 text-accent hover:text-accent" title="Configure flavours">
                           <UtensilsCrossed className="h-4 w-4" />
                         </Button>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditDialog(cake)}
-                            className="h-8 w-8 p-0"
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => openEditDialog(cake)} className="h-8 w-8 p-0">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteCake(cake.id)}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteCake(cake.id)} className="h-8 w-8 p-0 text-destructive hover:text-destructive">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -480,12 +497,8 @@ export default function CakeManagement() {
           </DialogHeader>
           <CakeFormFields {...formProps} />
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditCake} disabled={submitting}>
-              {submitting ? "Saving..." : "Save Changes"}
-            </Button>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={submitting}>Cancel</Button>
+            <Button onClick={handleEditCake} disabled={submitting}>{submitting ? "Saving..." : "Save Changes"}</Button>
           </div>
         </DialogContent>
       </Dialog>

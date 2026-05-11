@@ -11,10 +11,10 @@ export interface FilterPanelProps {
   setSelectedFlavors: (flavors: string[]) => void
   selectedCategory: string
   setSelectedCategory: (cat: string) => void
+  categories?: string[]
 }
 
-const FLAVORS    = ["Vanilla", "Chocolate", "Strawberry", "Lemon", "Carrot", "Red Velvet"]
-const CATEGORIES = ["All Cakes", "Wedding Cakes", "Birthday Cakes", "Cupcakes", "Desserts", "Custom Designs"]
+const FLAVORS = ["Vanilla", "Chocolate", "Strawberry", "Lemon", "Carrot", "Red Velvet"]
 
 export default function FilterPanel({
   priceRange,
@@ -23,7 +23,9 @@ export default function FilterPanel({
   setSelectedFlavors,
   selectedCategory,
   setSelectedCategory,
+  categories = [],
 }: FilterPanelProps) {
+  const CATEGORIES = ["All Cakes", ...categories]
   const [open, setOpen] = useState({ type: true, price: true, flavor: true })
   const toggle = (k: keyof typeof open) => setOpen((p) => ({ ...p, [k]: !p[k] }))
 
