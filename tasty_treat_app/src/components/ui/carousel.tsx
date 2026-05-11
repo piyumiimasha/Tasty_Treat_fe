@@ -63,16 +63,18 @@ function Carousel({
 
   const onSelect = React.useCallback((api: CarouselApi) => {
     if (!api) return
-    setCanScrollPrev(api.selectedSnap() > 0)
-    setCanScrollNext(api.selectedSnap() < api.snapList().length - 1)
+    setCanScrollPrev(api.selectedScrollSnap() > 0)
+    setCanScrollNext(api.selectedScrollSnap() < api.scrollSnapList().length - 1)
   }, [])
 
   const scrollPrev = React.useCallback(() => {
-    api?.scrollPrev()
+    if (!api) return
+    api.scrollTo(api.selectedScrollSnap() - 1)
   }, [api])
 
   const scrollNext = React.useCallback(() => {
-    api?.scrollNext()
+    if (!api) return
+    api.scrollTo(api.selectedScrollSnap() + 1)
   }, [api])
 
   const handleKeyDown = React.useCallback(
