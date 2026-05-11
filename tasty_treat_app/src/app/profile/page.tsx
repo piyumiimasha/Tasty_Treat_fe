@@ -8,7 +8,42 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { User, Mail, Phone, MapPin, Lock, Save, Loader2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { User, Mail, Phone, MapPin, Lock, Save, Loader2, Star, Pencil, Trash2, MessageSquare } from "lucide-react"
+import { ReviewDto, getCustomerReviews, updateReview, deleteReview } from "@/lib/api/reviews"
+import { getItemById } from "@/lib/api/items"
+
+function StarDisplay({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" }) {
+  const cls = size === "md" ? "w-5 h-5" : "w-4 h-4"
+  return (
+    <div className="flex gap-0.5">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star key={i} className={`${cls} ${i < rating ? "fill-amber-400 text-amber-400" : "text-border"}`} />
+      ))}
+    </div>
+  )
+}
+
+function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [hovered, setHovered] = useState(0)
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => onChange(star)}
+          onMouseEnter={() => setHovered(star)}
+          onMouseLeave={() => setHovered(0)}
+          className="focus:outline-none"
+        >
+          <Star className={`w-7 h-7 transition-colors ${star <= (hovered || value) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+        </button>
+      ))}
+    </div>
+  )
+}
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -26,6 +61,14 @@ export default function ProfilePage() {
     password: "",
     confirmPassword: "",
   })
+
+  const [reviews, setReviews] = useState<ReviewDto[]>([])
+  const [itemNames, setItemNames] = useState<Record<number, string>>({})
+  const [editTarget, setEditTarget] = useState<ReviewDto | null>(null)
+  const [editRating, setEditRating] = useState(0)
+  const [editComment, setEditComment] = useState("")
+  const [savingReview, setSavingReview] = useState(false)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
 
   useEffect(() => {
     const info = getUserInfo()
@@ -46,7 +89,55 @@ export default function ProfilePage() {
       })
       .catch(() => toast({ title: "Error", description: "Could not load profile.", variant: "destructive" }))
       .finally(() => setLoading(false))
+
+    getCustomerReviews(info.userId)
+      .then(async (data) => {
+        setReviews(data.sort((a, b) => new Date(b.reviewDate).getTime() - new Date(a.reviewDate).getTime()))
+        const uniqueItemIds = [...new Set(data.map((r) => r.itemId))]
+        const entries = await Promise.all(
+          uniqueItemIds.map(async (id) => {
+            try { const item = await getItemById(id); return [id, item.name] as [number, string] }
+            catch { return [id, `Item #${id}`] as [number, string] }
+          })
+        )
+        setItemNames(Object.fromEntries(entries))
+      })
+      .catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const openEdit = (review: ReviewDto) => {
+    setEditTarget(review)
+    setEditRating(review.rating)
+    setEditComment(review.comment ?? "")
+  }
+
+  const submitEdit = async () => {
+    if (!editTarget || editRating === 0) return
+    setSavingReview(true)
+    try {
+      const updated = await updateReview(editTarget.reviewId, { rating: editRating, comment: editComment.trim() || undefined })
+      setReviews((prev) => prev.map((r) => r.reviewId === updated.reviewId ? updated : r))
+      setEditTarget(null)
+      toast({ title: "Review updated" })
+    } catch {
+      toast({ title: "Error", description: "Failed to update review.", variant: "destructive" })
+    } finally {
+      setSavingReview(false)
+    }
+  }
+
+  const handleDelete = async (reviewId: number) => {
+    setDeletingId(reviewId)
+    try {
+      await deleteReview(reviewId)
+      setReviews((prev) => prev.filter((r) => r.reviewId !== reviewId))
+      toast({ title: "Review deleted" })
+    } catch {
+      toast({ title: "Error", description: "Failed to delete review.", variant: "destructive" })
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   const handleSave = async () => {
     if (form.password && form.password !== form.confirmPassword) {
@@ -118,7 +209,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <Card className="border border-border">
+      <Card className="border border-border mb-6">
         <CardHeader>
           <CardTitle className="text-base">Personal Information</CardTitle>
         </CardHeader>
@@ -212,6 +303,101 @@ export default function ProfilePage() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* My Reviews */}
+      <Card className="border border-border">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-muted-foreground" />
+            My Reviews
+            {reviews.length > 0 && (
+              <span className="text-sm font-normal text-muted-foreground">({reviews.length})</span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {reviews.length === 0 ? (
+            <p className="text-sm text-muted-foreground">You haven't reviewed any orders yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <div key={review.reviewId} className="rounded-xl border border-border bg-secondary/20 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">
+                        {itemNames[review.itemId] ?? `Item #${review.itemId}`}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <StarDisplay rating={review.rating} />
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(review.reviewDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {review.comment && (
+                        <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{review.comment}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEdit(review)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(review.reviewId)}
+                        disabled={deletingId === review.reviewId}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/5"
+                      >
+                        {deletingId === review.reviewId
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : <Trash2 className="w-3.5 h-3.5" />
+                        }
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Edit review dialog */}
+      <Dialog open={!!editTarget} onOpenChange={(open) => { if (!open) setEditTarget(null) }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Review</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {editTarget && (
+              <p className="text-sm text-muted-foreground">
+                {itemNames[editTarget.itemId] ?? `Item #${editTarget.itemId}`}
+              </p>
+            )}
+            <StarPicker value={editRating} onChange={setEditRating} />
+            <Textarea
+              placeholder="Your comment (optional)..."
+              value={editComment}
+              onChange={(e) => setEditComment(e.target.value)}
+              rows={4}
+              className="resize-none"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={savingReview}>
+              Cancel
+            </Button>
+            <Button onClick={submitEdit} disabled={editRating === 0 || savingReview}>
+              {savingReview ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Saving…</> : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

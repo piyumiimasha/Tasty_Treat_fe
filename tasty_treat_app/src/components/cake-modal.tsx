@@ -1,6 +1,6 @@
 "use client"
 
-import { X, ChevronLeft, ChevronRight, Heart, ShoppingCart, Star } from "lucide-react"
+import { X, ChevronLeft, ChevronRight, Heart, ShoppingCart, Star, MessageSquare } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Cake } from "@/lib/mappers/item-mapper"
@@ -8,6 +8,7 @@ import { ItemFlavourDto, getFlavoursByItem } from "@/lib/api/item-flavours"
 import { addItemToCart } from "@/lib/api/cart"
 import { useToast } from "@/hooks/use-toast"
 import { getUserInfo } from "@/lib/api/auth"
+import { ReviewDto, getItemReviews } from "@/lib/api/reviews"
 
 
 function parseKg(weightStr: string): number {
@@ -29,6 +30,7 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
   const [selectedWeight, setSelectedWeight] = useState(cake.size)
   const [flavours, setFlavours] = useState<ItemFlavourDto[]>([])
   const [selectedFlavourId, setSelectedFlavourId] = useState<string>("base")
+  const [reviews, setReviews] = useState<ReviewDto[]>([])
 
   useEffect(() => {
     getFlavoursByItem(cake.id).then((data) => {
@@ -36,7 +38,13 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
     }).catch(() => {
       setFlavours([])
     })
+    getItemReviews(cake.id).then(setReviews).catch(() => setReviews([]))
   }, [cake.id])
+
+  const avgRating = useMemo(() => {
+    if (reviews.length === 0) return null
+    return Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * 10) / 10
+  }, [reviews])
 
   const selectedFlavour = selectedFlavourId === "base"
     ? null
@@ -154,10 +162,16 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star
                     key={i}
-                    className={`w-4 h-4 ${i < Math.floor(cake.rating) ? "fill-amber-400 text-amber-400" : "text-border"}`}
+                    className={`w-4 h-4 ${avgRating !== null && i < Math.floor(avgRating) ? "fill-amber-400 text-amber-400" : "text-border"}`}
                   />
                 ))}
-                <span className="text-sm text-muted-foreground ml-2">({cake.rating} / 5)</span>
+                {avgRating !== null ? (
+                  <span className="text-sm text-muted-foreground ml-2">
+                    {avgRating} / 5 &nbsp;·&nbsp; {reviews.length} review{reviews.length !== 1 ? "s" : ""}
+                  </span>
+                ) : (
+                  <span className="text-sm text-muted-foreground ml-2">No reviews yet</span>
+                )}
               </div>
               <div className="flex items-end gap-3">
                 <h3 className="text-4xl font-bold text-primary font-serif">Rs. {calculatedPrice.toLocaleString()}</h3>
@@ -287,6 +301,48 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Reviews section */}
+        <div className="px-6 pb-6 border-t border-border/60 mt-2 pt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <MessageSquare className="w-5 h-5 text-muted-foreground" />
+            <h3 className="font-serif text-lg font-semibold text-primary">
+              Customer Reviews
+            </h3>
+            {reviews.length > 0 && (
+              <span className="text-sm text-muted-foreground">({reviews.length})</span>
+            )}
+          </div>
+
+          {reviews.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No reviews yet. Be the first to share your experience!
+            </p>
+          ) : (
+            <div className="space-y-4 max-h-72 overflow-y-auto pr-1">
+              {reviews.map((review) => (
+                <div key={review.reviewId} className="bg-secondary/30 rounded-xl p-4 border border-border/40">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-0.5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-3.5 h-3.5 ${i < review.rating ? "fill-amber-400 text-amber-400" : "text-border"}`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(review.reviewDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                  {review.comment && (
+                    <p className="text-sm text-foreground leading-relaxed">{review.comment}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

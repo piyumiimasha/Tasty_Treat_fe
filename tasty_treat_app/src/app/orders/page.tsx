@@ -5,10 +5,13 @@ import type React from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Package, Check, Palette, ChefHat, MessageCircle, ShoppingBag } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Package, Check, Palette, ChefHat, MessageCircle, ShoppingBag, Star } from "lucide-react"
 import Link from "next/link"
 import { getUserInfo } from "@/lib/api/auth"
 import { CartItem } from "@/lib/api/cart"
+import { createReview, getCustomerReviews } from "@/lib/api/reviews"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079'
 
@@ -58,19 +61,55 @@ function StatusBadge({ s }: { s: "completed" | "in-progress" | "pending" }) {
   return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Pending</Badge>
 }
 
+interface ReviewDialogState {
+  orderId: number
+  customerId: number
+  items: CartItem[]
+}
+
+function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [hovered, setHovered] = useState(0)
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => onChange(star)}
+          onMouseEnter={() => setHovered(star)}
+          onMouseLeave={() => setHovered(0)}
+          className="focus:outline-none"
+        >
+          <Star
+            className={`w-8 h-8 transition-colors ${
+              star <= (hovered || value) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"
+            }`}
+          />
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderDto[]>([])
   const [quoteItems, setQuoteItems] = useState<Record<number, CartItem[]>>({})
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  const [reviewedOrderIds, setReviewedOrderIds] = useState<Set<number>>(new Set())
+  const [reviewDialog, setReviewDialog] = useState<ReviewDialogState | null>(null)
+  const [reviewRating, setReviewRating] = useState(0)
+  const [reviewComment, setReviewComment] = useState("")
+  const [submittingReview, setSubmittingReview] = useState(false)
 
   const loadOrders = useCallback(async () => {
     const info = getUserInfo()
     if (!info) { setLoading(false); return }
     try {
-      const [ordersRes, quotesRes] = await Promise.all([
+      const [ordersRes, quotesRes, reviewsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/Orders/customer/${info.userId}`, { headers: authHeaders() }),
         fetch(`${API_BASE_URL}/api/InstantQuotes/customer/${info.userId}`, { headers: authHeaders() }),
+        getCustomerReviews(info.userId).catch(() => []),
       ])
       if (!ordersRes.ok) throw new Error()
       const data: OrderDto[] = await ordersRes.json()
@@ -88,11 +127,43 @@ export default function OrdersPage() {
         })
         setQuoteItems(map)
       }
+
+      const reviewed = new Set(reviewsRes.map((r) => r.orderId))
+      setReviewedOrderIds(reviewed)
     } catch {}
     finally { setLoading(false) }
   }, [])
 
   useEffect(() => { loadOrders() }, [loadOrders])
+
+  const openReviewDialog = (order: OrderDto, items: CartItem[]) => {
+    setReviewDialog({ orderId: order.orderId, customerId: order.customerId, items })
+    setReviewRating(0)
+    setReviewComment("")
+  }
+
+  const submitReview = async () => {
+    if (!reviewDialog || reviewRating === 0) return
+    setSubmittingReview(true)
+    try {
+      const itemsToReview = reviewDialog.items.length > 0 ? reviewDialog.items : []
+      if (itemsToReview.length === 0) return
+      await Promise.all(
+        itemsToReview.map((item) =>
+          createReview({
+            orderId: reviewDialog.orderId,
+            itemId: item.itemId,
+            customerId: reviewDialog.customerId,
+            rating: reviewRating,
+            comment: reviewComment.trim() || undefined,
+          })
+        )
+      )
+      setReviewedOrderIds((prev) => new Set(prev).add(reviewDialog.orderId))
+      setReviewDialog(null)
+    } catch {}
+    finally { setSubmittingReview(false) }
+  }
 
   const handleExpand = (orderId: number) => {
     setExpandedId((prev) => prev === orderId ? null : orderId)
@@ -214,6 +285,22 @@ export default function OrdersPage() {
                             Contact Baker
                           </Button>
                         </Link>
+                        {order.status === "Completed" && items.length > 0 && (
+                          reviewedOrderIds.has(order.orderId) ? (
+                            <div className="flex items-center gap-1 px-4 text-sm text-emerald-600 font-medium">
+                              <Star className="w-4 h-4 fill-emerald-500 text-emerald-500" />
+                              Reviewed
+                            </div>
+                          ) : (
+                            <Button
+                              onClick={() => openReviewDialog(order, items)}
+                              className="flex-1 bg-amber-500 hover:bg-amber-600 text-white"
+                            >
+                              <Star className="w-4 h-4 mr-2" />
+                              Rate your order
+                            </Button>
+                          )
+                        )}
                       </div>
                     </div>
                   )}
@@ -223,6 +310,39 @@ export default function OrdersPage() {
           </div>
         )}
       </div>
+
+      <Dialog open={!!reviewDialog} onOpenChange={(open) => { if (!open) setReviewDialog(null) }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>How was your order?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <p className="text-sm text-muted-foreground mb-3">Tap a star to rate your experience</p>
+              <StarRating value={reviewRating} onChange={setReviewRating} />
+            </div>
+            <Textarea
+              placeholder="Share your experience (optional)..."
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.target.value)}
+              rows={4}
+              className="resize-none"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReviewDialog(null)} disabled={submittingReview}>
+              Cancel
+            </Button>
+            <Button
+              onClick={submitReview}
+              disabled={reviewRating === 0 || submittingReview}
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              {submittingReview ? "Submitting..." : "Submit Review"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }

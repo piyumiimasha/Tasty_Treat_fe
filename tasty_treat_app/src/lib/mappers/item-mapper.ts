@@ -37,7 +37,7 @@ export function mapItemToCake(item: ItemDto): Cake {
     price: item.basePrice,
     size: item.basePriceUnit || additionalData.size || "1 kg",
     flavor: additionalData.flavor || "Custom Flavor",
-    rating: additionalData.rating || 4.5,
+    rating: additionalData.rating || 0,
     images: images,
     videos: additionalData.videos || [],
   }

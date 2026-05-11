@@ -1,6 +1,6 @@
 "use client"
 
-import { Star, Heart, Eye } from "lucide-react"
+import { Heart, Eye } from "lucide-react"
 import { useState } from "react"
 import { Cake } from "@/lib/mappers/item-mapper"
 
@@ -67,20 +67,6 @@ export default function CakeCard({ cake, onClick }: CakeCardProps) {
           {cake.name}
         </h3>
 
-        {/* Stars */}
-        <div className="flex items-center gap-0.5 mb-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Star
-              key={i}
-              className={`w-3.5 h-3.5 ${
-                i < Math.floor(cake.rating)
-                  ? "fill-amber-400 text-amber-400"
-                  : "text-border"
-              }`}
-            />
-          ))}
-          <span className="text-xs text-muted-foreground ml-1">({cake.rating})</span>
-        </div>
 
         <p className="text-sm text-muted-foreground line-clamp-1 mb-3">{cake.flavor}</p>
 
