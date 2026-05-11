@@ -89,7 +89,7 @@ export default function OrderManagement() {
         {/* Filters */}
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center">
           <Input
-            placeholder="Search by order ID or customer IDâ€¦"
+            placeholder="Search by order ID or customer ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1"
