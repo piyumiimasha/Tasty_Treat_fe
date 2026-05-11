@@ -16,6 +16,7 @@ import { CategoryDto, getCategories, createCategory, updateCategory, deleteCateg
 interface FormData {
   name: string
   category: string
+  categoryId?: number
   price: number
   size: string
   flavor: string
@@ -50,7 +51,10 @@ function CakeFormFields({ formData, setFormData, imagePreviews, handleImageChang
           id="category"
           className="w-full rounded-md border border-input bg-background px-3 py-2 font-sans text-sm"
           value={formData.category}
-          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+          onChange={(e) => {
+            const selected = categories.find(c => c.name === e.target.value)
+            setFormData({ ...formData, category: e.target.value, categoryId: selected?.categoryId })
+          }}
         >
           {categories.length === 0 && <option value="">No categories — add one below</option>}
           {categories.map((cat) => (
@@ -293,6 +297,7 @@ export default function CakeManagement() {
     setFormData({
       name: "",
       category: cats[0]?.name ?? "",
+      categoryId: cats[0]?.categoryId,
       price: 0,
       size: "",
       flavor: "",
@@ -310,7 +315,7 @@ export default function CakeManagement() {
     try {
       setSubmitting(true)
       const newCake: Omit<Cake, "id"> = {
-        name: formData.name, category: formData.category, price: formData.price,
+        name: formData.name, category: formData.category, categoryId: formData.categoryId, price: formData.price,
         size: formData.size, flavor: formData.flavor, rating: 0, images: [], videos: [],
       }
       await createItem(mapCakeToCreateItem(newCake), imageFiles[0])
@@ -333,7 +338,7 @@ export default function CakeManagement() {
     try {
       setSubmitting(true)
       const updatedCake: Partial<Cake> = {
-        name: formData.name, category: formData.category, price: formData.price,
+        name: formData.name, category: formData.category, categoryId: formData.categoryId, price: formData.price,
         size: formData.size, flavor: formData.flavor,
       }
       await updateItem(editingCake.id, mapCakeToUpdateItem(updatedCake), imageFiles[0])
@@ -362,7 +367,7 @@ export default function CakeManagement() {
 
   const openEditDialog = (cake: Cake) => {
     setEditingCake(cake)
-    setFormData({ name: cake.name, category: cake.category, price: cake.price, size: cake.size, flavor: cake.flavor, images: cake.images.join(", ") })
+    setFormData({ name: cake.name, category: cake.category, categoryId: cake.categoryId, price: cake.price, size: cake.size, flavor: cake.flavor, images: cake.images.join(", ") })
     setImageFiles([])
     setImagePreviews(cake.images.length > 0 ? [cake.images[0]] : [])
     setIsEditDialogOpen(true)

@@ -5,6 +5,7 @@ export interface Cake {
   id: number
   name: string
   category: string
+  categoryId?: number
   price: number
   size: string
   flavor: string
@@ -34,6 +35,7 @@ export function mapItemToCake(item: ItemDto): Cake {
     id: item.itemId,
     name: item.name,
     category: item.category,
+    categoryId: item.categoryId,
     price: item.basePrice,
     size: item.basePriceUnit || additionalData.size || "1 kg",
     flavor: additionalData.flavor || "Custom Flavor",
@@ -54,7 +56,7 @@ export function mapCakeToCreateItem(cake: Omit<Cake, "id">): CreateItemDto {
 
   return {
     name: cake.name,
-    category: cake.category,
+    categoryId: cake.categoryId,
     basePrice: cake.price,
     basePriceUnit: cake.size,
     description: JSON.stringify(additionalData),
@@ -66,7 +68,7 @@ export function mapCakeToUpdateItem(cake: Partial<Cake>): UpdateItemDto {
   const updateDto: UpdateItemDto = {}
 
   if (cake.name !== undefined) updateDto.name = cake.name
-  if (cake.category !== undefined) updateDto.category = cake.category
+  if (cake.categoryId !== undefined) updateDto.categoryId = cake.categoryId
   if (cake.price !== undefined) updateDto.basePrice = cake.price
   if (cake.size !== undefined) updateDto.basePriceUnit = cake.size
 

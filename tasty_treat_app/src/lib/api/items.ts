@@ -6,6 +6,7 @@ export interface ItemDto {
   itemId: number;
   name: string;
   category: string;
+  categoryId?: number;
   basePrice: number;
   basePriceUnit?: string;
   description?: string;
@@ -14,7 +15,7 @@ export interface ItemDto {
 
 export interface CreateItemDto {
   name: string;
-  category: string;
+  categoryId?: number;
   basePrice: number;
   basePriceUnit?: string;
   description?: string;
@@ -22,7 +23,7 @@ export interface CreateItemDto {
 
 export interface UpdateItemDto {
   name?: string;
-  category?: string;
+  categoryId?: number;
   basePrice?: number;
   basePriceUnit?: string;
   description?: string;
@@ -136,13 +137,16 @@ export async function createItem(data: CreateItemDto, imageFile?: File): Promise
     
     // Append item data
     formData.append('name', data.name);
-    formData.append('category', data.category);
     formData.append('basePrice', data.basePrice.toString());
-    
+
+    if (data.categoryId !== undefined) {
+      formData.append('categoryId', data.categoryId.toString());
+    }
+
     if (data.basePriceUnit) {
       formData.append('basePriceUnit', data.basePriceUnit);
     }
-    
+
     if (data.description) {
       formData.append('description', data.description);
     }
@@ -182,10 +186,10 @@ export async function updateItem(id: number, data: UpdateItemDto, imageFile?: Fi
       formData.append('name', data.name);
     }
     
-    if (data.category !== undefined) {
-      formData.append('category', data.category);
+    if (data.categoryId !== undefined) {
+      formData.append('categoryId', data.categoryId.toString());
     }
-    
+
     if (data.basePrice !== undefined) {
       formData.append('basePrice', data.basePrice.toString());
     }
