@@ -47,7 +47,8 @@ const STAGES: { name: string; icon: React.ReactNode }[] = [
 ]
 
 function stageStatus(stageIndex: number, statusIndex: number): "completed" | "in-progress" | "pending" {
-  if (stageIndex === 0) return "completed"   // Order Confirmed is always done
+  if (stageIndex === 0) return "completed"
+  if (statusIndex === STATUS_PIPELINE.length - 1) return "completed"  // order fully completed — all stages done
   // Offset by 1 because "In Progress" is removed from visible stages but kept in the pipeline
   const pipelineIndex = stageIndex + 1
   if (pipelineIndex < statusIndex) return "completed"
