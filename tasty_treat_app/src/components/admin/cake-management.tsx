@@ -12,6 +12,7 @@ import { getAllItems, createItem, updateItem, deleteItem } from "@/lib/api/items
 import { mapItemToCake, mapCakeToCreateItem, mapCakeToUpdateItem, Cake } from "@/lib/mappers/item-mapper"
 import FlavourConfigDialog from "@/components/admin/flavour-config-dialog"
 import { CategoryDto, getCategories, createCategory, updateCategory, deleteCategory } from "@/lib/api/categories"
+import ConfirmDeleteDialog from "@/components/admin/confirm-delete-dialog"
 
 interface FormData {
   name: string
@@ -131,6 +132,8 @@ function CategoryManager({ categories, onRefresh }: { categories: CategoryDto[];
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingName, setEditingName] = useState("")
   const [saving, setSaving] = useState(false)
+  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const { toast } = useToast()
 
   const handleAdd = async () => {
@@ -163,14 +166,20 @@ function CategoryManager({ categories, onRefresh }: { categories: CategoryDto[];
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Delete this category?")) return
+  const handleDelete = (id: number) => setDeleteId(id)
+
+  const confirmDelete = async () => {
+    if (!deleteId) return
+    setDeleting(true)
     try {
-      await deleteCategory(id)
+      await deleteCategory(deleteId)
+      setDeleteId(null)
       onRefresh()
       toast({ title: "Category deleted" })
     } catch {
       toast({ title: "Error", description: "Failed to delete category.", variant: "destructive" })
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -239,6 +248,15 @@ function CategoryManager({ categories, onRefresh }: { categories: CategoryDto[];
           </div>
         </CardContent>
       )}
+
+      <ConfirmDeleteDialog
+        open={!!deleteId}
+        onOpenChange={(open) => { if (!open) setDeleteId(null) }}
+        title="Delete Category"
+        description="This will remove the category. Cakes using it will become uncategorised."
+        onConfirm={confirmDelete}
+        loading={deleting}
+      />
     </Card>
   )
 }
@@ -253,6 +271,8 @@ export default function CakeManagement() {
   const [editingCake, setEditingCake] = useState<Cake | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [flavourDialogCake, setFlavourDialogCake] = useState<Cake | null>(null)
+  const [deleteCakeId, setDeleteCakeId] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const { toast } = useToast()
 
   const [formData, setFormData] = useState<FormData>({
@@ -354,14 +374,20 @@ export default function CakeManagement() {
     }
   }
 
-  const handleDeleteCake = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this cake?")) return
+  const handleDeleteCake = (id: number) => setDeleteCakeId(id)
+
+  const confirmDeleteCake = async () => {
+    if (!deleteCakeId) return
+    setDeleting(true)
     try {
-      await deleteItem(id)
+      await deleteItem(deleteCakeId)
+      setDeleteCakeId(null)
       toast({ title: "Success", description: "Cake deleted successfully" })
       await loadAll()
     } catch {
       toast({ title: "Error", description: "Failed to delete cake.", variant: "destructive" })
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -517,6 +543,15 @@ export default function CakeManagement() {
           cakeName={flavourDialogCake.name}
         />
       )}
+
+      <ConfirmDeleteDialog
+        open={!!deleteCakeId}
+        onOpenChange={(open) => { if (!open) setDeleteCakeId(null) }}
+        title="Delete Cake"
+        description="This will permanently delete the cake and cannot be undone."
+        onConfirm={confirmDeleteCake}
+        loading={deleting}
+      />
     </div>
   )
 }

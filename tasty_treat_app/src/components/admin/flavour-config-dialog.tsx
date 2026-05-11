@@ -14,6 +14,7 @@ import {
   updateFlavour,
   deleteFlavour,
 } from "@/lib/api/item-flavours"
+import ConfirmDeleteDialog from "@/components/admin/confirm-delete-dialog"
 
 interface FlavourConfigDialogProps {
   open: boolean
@@ -31,6 +32,8 @@ export default function FlavourConfigDialog({ open, onOpenChange, cakeId, cakeNa
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editName, setEditName] = useState("")
   const [editPrice, setEditPrice] = useState("")
+  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -94,13 +97,20 @@ export default function FlavourConfigDialog({ open, onOpenChange, cakeId, cakeNa
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = (id: number) => setDeleteId(id)
+
+  const confirmDelete = async () => {
+    if (!deleteId) return
+    setDeleting(true)
     try {
-      await deleteFlavour(cakeId, id)
-      setFlavours((prev) => prev.filter((f) => f.itemFlavourId !== id))
+      await deleteFlavour(cakeId, deleteId)
+      setFlavours((prev) => prev.filter((f) => f.itemFlavourId !== deleteId))
+      setDeleteId(null)
       toast({ title: "Success", description: "Flavour deleted" })
     } catch {
       toast({ title: "Error", description: "Failed to delete flavour", variant: "destructive" })
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -198,6 +208,15 @@ export default function FlavourConfigDialog({ open, onOpenChange, cakeId, cakeNa
           </div>
         </div>
       </DialogContent>
+
+      <ConfirmDeleteDialog
+        open={!!deleteId}
+        onOpenChange={(open) => { if (!open) setDeleteId(null) }}
+        title="Delete Flavour"
+        description="This extra flavour option will be permanently removed."
+        onConfirm={confirmDelete}
+        loading={deleting}
+      />
     </Dialog>
   )
 }

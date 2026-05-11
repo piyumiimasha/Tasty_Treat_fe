@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Plus, Trash2, Pencil, Circle, Layers, Droplets, Palette, Star, Sparkles, Tag, Leaf, Cake } from "lucide-react"
+import ConfirmDeleteDialog from "@/components/admin/confirm-delete-dialog"
 import { useToast } from "@/hooks/use-toast"
 import {
   getDesignerOptions,
@@ -47,6 +48,8 @@ export default function DesignerOptions() {
   const [editingId, setEditingId]             = useState<number | null>(null)
   const [form, setForm]                       = useState<FormState>(EMPTY_FORM)
   const [saving, setSaving]                   = useState(false)
+  const [deleteId, setDeleteId]               = useState<number | null>(null)
+  const [deleting, setDeleting]               = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -117,12 +120,19 @@ export default function DesignerOptions() {
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = (id: number) => setDeleteId(id)
+
+  const confirmDelete = async () => {
+    if (!deleteId) return
+    setDeleting(true)
     try {
-      await deleteDesignerOption(id)
-      setOptions((prev) => prev.filter((o) => o.optionId !== id))
+      await deleteDesignerOption(deleteId)
+      setOptions((prev) => prev.filter((o) => o.optionId !== deleteId))
+      setDeleteId(null)
     } catch {
       toast({ title: "Error", description: "Failed to delete option.", variant: "destructive" })
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -294,6 +304,15 @@ export default function DesignerOptions() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!deleteId}
+        onOpenChange={(open) => { if (!open) setDeleteId(null) }}
+        title="Delete Option"
+        description="This customisation option will be permanently removed."
+        onConfirm={confirmDelete}
+        loading={deleting}
+      />
     </div>
   )
 }
