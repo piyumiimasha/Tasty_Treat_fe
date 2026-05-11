@@ -70,3 +70,12 @@ export async function deleteFlavour(itemId: number, id: number): Promise<void> {
   if (!response.ok) throw new Error('Failed to delete flavour');
 }
 
+export async function getDistinctFlavours(): Promise<string[]> {
+  const response = await fetch(`${API_BASE_URL}/api/Flavours/distinct`, {
+    method: 'GET',
+    headers: buildHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to fetch flavours');
+  return response.json();
+}
+

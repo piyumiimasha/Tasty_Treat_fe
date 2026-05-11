@@ -5,6 +5,7 @@ import CakeGallery from "./cake-gallery"
 import FilterPanel from "./filter-panel"
 import { getAllItems, getItemsByCategory } from "@/lib/api/items"
 import { getCategories } from "@/lib/api/categories"
+import { getDistinctFlavours } from "@/lib/api/item-flavours"
 import { mapItemToCake, Cake } from "@/lib/mappers/item-mapper"
 import { useToast } from "@/hooks/use-toast"
 import { Search, X } from "lucide-react"
@@ -25,6 +26,7 @@ const HERO_SLIDES = [
 export default function CakeBrowser() {
   const [allCakes, setAllCakes]                 = useState<Cake[]>([])
   const [dbCategories, setDbCategories]         = useState<string[]>([])
+  const [dbFlavours, setDbFlavours]             = useState<string[]>([])
   const [loading, setLoading]                   = useState(true)
   const [selectedCategory, setSelectedCategory] = useState("All Cakes")
   const [priceRange, setPriceRange]             = useState<[number, number]>([0, 10000])
@@ -64,6 +66,7 @@ export default function CakeBrowser() {
   /* ── data fetching ── */
   useEffect(() => {
     getCategories().then((cats) => setDbCategories(cats.map((c) => c.name))).catch(() => {})
+    getDistinctFlavours().then(setDbFlavours).catch(() => {})
     loadCakes()
   }, [])
   useEffect(() => {
@@ -273,6 +276,7 @@ export default function CakeBrowser() {
                   selectedCategory={selectedCategory}
                   setSelectedCategory={handleCategoryChange}
                   categories={dbCategories}
+                  flavours={dbFlavours}
                 />
               </div>
 

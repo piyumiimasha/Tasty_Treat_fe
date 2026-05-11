@@ -38,7 +38,7 @@ export function mapItemToCake(item: ItemDto): Cake {
     categoryId: item.categoryId,
     price: item.basePrice,
     size: item.basePriceUnit || additionalData.size || "1 kg",
-    flavor: additionalData.flavor || "Custom Flavor",
+    flavor: item.flavour || additionalData.flavor || "Custom Flavor",
     rating: additionalData.rating || 0,
     images: images,
     videos: additionalData.videos || [],
@@ -49,7 +49,6 @@ export function mapItemToCake(item: ItemDto): Cake {
 export function mapCakeToCreateItem(cake: Omit<Cake, "id">): CreateItemDto {
   // Store additional fields in description as JSON (excluding images)
   const additionalData = {
-    flavor: cake.flavor,
     rating: cake.rating,
     videos: cake.videos,
   }
@@ -57,6 +56,7 @@ export function mapCakeToCreateItem(cake: Omit<Cake, "id">): CreateItemDto {
   return {
     name: cake.name,
     categoryId: cake.categoryId,
+    flavour: cake.flavor,
     basePrice: cake.price,
     basePriceUnit: cake.size,
     description: JSON.stringify(additionalData),
@@ -69,12 +69,12 @@ export function mapCakeToUpdateItem(cake: Partial<Cake>): UpdateItemDto {
 
   if (cake.name !== undefined) updateDto.name = cake.name
   if (cake.categoryId !== undefined) updateDto.categoryId = cake.categoryId
+  if (cake.flavor !== undefined) updateDto.flavour = cake.flavor
   if (cake.price !== undefined) updateDto.basePrice = cake.price
   if (cake.size !== undefined) updateDto.basePriceUnit = cake.size
 
   // Store additional fields in description as JSON (excluding images)
   const additionalData: any = {}
-  if (cake.flavor !== undefined) additionalData.flavor = cake.flavor
   if (cake.rating !== undefined) additionalData.rating = cake.rating
   if (cake.videos !== undefined) additionalData.videos = cake.videos
 

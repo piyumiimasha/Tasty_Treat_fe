@@ -12,9 +12,8 @@ export interface FilterPanelProps {
   selectedCategory: string
   setSelectedCategory: (cat: string) => void
   categories?: string[]
+  flavours?: string[]
 }
-
-const FLAVORS = ["Vanilla", "Chocolate", "Strawberry", "Lemon", "Carrot", "Red Velvet"]
 
 export default function FilterPanel({
   priceRange,
@@ -24,6 +23,7 @@ export default function FilterPanel({
   selectedCategory,
   setSelectedCategory,
   categories = [],
+  flavours = [],
 }: FilterPanelProps) {
   const CATEGORIES = ["All Cakes", ...categories]
   const [open, setOpen] = useState({ type: true, price: true, flavor: true })
@@ -122,7 +122,10 @@ export default function FilterPanel({
 
         {open.flavor && (
           <div className="px-4 py-3 space-y-0.5">
-            {FLAVORS.map((name) => {
+            {flavours.length === 0 && (
+              <p className="text-xs text-muted-foreground px-3 py-2">No flavours available</p>
+            )}
+            {flavours.map((name) => {
               const checked = selectedFlavors.includes(name)
               return (
                 <label
