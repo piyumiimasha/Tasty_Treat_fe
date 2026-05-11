@@ -3,7 +3,7 @@ const ORS_API_KEY = process.env.NEXT_PUBLIC_ORS_API_KEY || ""
 export const RATE_PER_KM = 100
 
 // Nominatim geocoding restricted to Sri Lanka — better accuracy for LK addresses
-async function geocode(address: string): Promise<[number, number]> {
+async function geocode(address: string): Promise<[number, number] | null> {
   const url =
     `https://nominatim.openstreetmap.org/search` +
     `?q=${encodeURIComponent(address)}` +
@@ -11,9 +11,8 @@ async function geocode(address: string): Promise<[number, number]> {
   const res = await fetch(url, { headers: { "User-Agent": "TastyTreat/1.0" } })
   if (!res.ok) throw new Error(`Geocoding failed (${res.status})`)
   const data = await res.json()
-  if (!data.length) throw new Error(`Could not find location: "${address}"`)
+  if (!data.length) return null
   const { lon, lat } = data[0]
-  console.log(`[geocode] "${address}" → [${lon}, ${lat}]`)
   return [parseFloat(lon), parseFloat(lat)]
 }
 
@@ -26,6 +25,8 @@ export async function calculateDeliveryFee(
     geocode(BAKERY_ADDRESS),
     geocode(customerAddress),
   ])
+
+  if (!bakeryCoords || !customerCoords) throw new Error("Could not resolve one or both addresses")
 
   const res = await fetch(
     "https://api.openrouteservice.org/v2/matrix/driving-car",

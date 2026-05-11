@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { CheckCircle2, Truck, CreditCard, Loader2, MapPin } from "lucide-react"
+import { CheckCircle2, Truck, CreditCard, Loader2, MapPin, Pencil, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -37,6 +37,8 @@ export default function CheckoutPage() {
     searchParams.get("distanceKm") ? Number(searchParams.get("distanceKm")) : null
   )
   const [calculatingFee, setCalculatingFee] = useState(false)
+  const [savedAddress, setSavedAddress] = useState("")
+  const [editingAddress, setEditingAddress] = useState(false)
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", email: "", phone: "",
     address: "", city: "", state: "", zip: "",
@@ -58,21 +60,25 @@ export default function CheckoutPage() {
     const info = getUserInfo()
     if (!info) return
     getUserProfile(info.userId).then((p) => {
+      const addr = p.address ?? ""
+      setSavedAddress(addr)
       setFormData((f) => ({
         ...f,
         firstName: p.name.split(" ")[0] ?? "",
         lastName: p.name.split(" ").slice(1).join(" ") ?? "",
         email: p.email,
         phone: p.phoneNo ?? "",
-        address: p.address ?? "",
+        address: addr,
       }))
     }).catch(() => {})
   }, [loadCart])
 
   // Recalculate delivery fee when address fields change (debounced)
   useEffect(() => {
-    const fullAddress = [formData.address, formData.city, formData.state].filter(Boolean).join(", ")
-    if (!fullAddress.trim()) return
+    const fullAddress = editingAddress
+      ? [formData.address, formData.city, formData.state].filter(Boolean).join(", ")
+      : savedAddress
+    if (fullAddress.trim().length < 6) return
 
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
@@ -86,10 +92,10 @@ export default function CheckoutPage() {
       } finally {
         setCalculatingFee(false)
       }
-    }, 1000)
+    }, 2000)
 
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [formData.address, formData.city, formData.state])
+  }, [formData.address, formData.city, formData.state, editingAddress, savedAddress])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -113,7 +119,9 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           customerId: info.userId,
           status: "Pending",
-          deliveryAddress: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`.trim(),
+          deliveryAddress: editingAddress
+            ? `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`.trim()
+            : savedAddress,
           specialInstructions: "",
           totalAmount: total,
         }),
@@ -201,23 +209,55 @@ export default function CheckoutPage() {
                   <label className="block text-sm font-semibold text-foreground mb-2">Delivery Date</label>
                   <Input name="deliveryDate" type="date" value={formData.deliveryDate} onChange={handleInputChange} />
                 </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-semibold text-foreground mb-2">Street Address</label>
-                  <Input name="address" placeholder="123 Main St" value={formData.address} onChange={handleInputChange} />
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-foreground mb-2">City</label>
-                    <Input name="city" placeholder="Colombo" value={formData.city} onChange={handleInputChange} />
+                {/* Delivery Address */}
+                <div className="mb-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-semibold text-foreground">Delivery Address</label>
+                    {savedAddress && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (editingAddress) {
+                            // revert to saved
+                            setFormData((f) => ({ ...f, address: savedAddress, city: "", state: "", zip: "" }))
+                          }
+                          setEditingAddress((v) => !v)
+                        }}
+                        className="flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+                      >
+                        {editingAddress ? (
+                          <><Check className="w-3 h-3" /> Use saved address</>
+                        ) : (
+                          <><Pencil className="w-3 h-3" /> Use different address</>
+                        )}
+                      </button>
+                    )}
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-foreground mb-2">State</label>
-                    <Input name="state" placeholder="Western" value={formData.state} onChange={handleInputChange} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-foreground mb-2">ZIP Code</label>
-                    <Input name="zip" placeholder="10001" value={formData.zip} onChange={handleInputChange} />
-                  </div>
+
+                  {!editingAddress && savedAddress ? (
+                    <div className="flex items-start gap-2 p-3 rounded-lg border border-border bg-secondary/30 text-sm text-foreground">
+                      <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span>{savedAddress}</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <Input name="address" placeholder="123 Main St" value={formData.address} onChange={handleInputChange} />
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-foreground mb-2">City</label>
+                          <Input name="city" placeholder="Colombo" value={formData.city} onChange={handleInputChange} />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-foreground mb-2">State</label>
+                          <Input name="state" placeholder="Western" value={formData.state} onChange={handleInputChange} />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-foreground mb-2">ZIP Code</label>
+                          <Input name="zip" placeholder="10001" value={formData.zip} onChange={handleInputChange} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card>
             )}
