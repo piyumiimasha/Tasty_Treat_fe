@@ -16,11 +16,10 @@ function headers(): HeadersInit {
 }
 
 
-const STATUS_OPTIONS = ["Pending", "In Progress", "Baking", "Decoration", "Ready for Pickup", "Completed", "Cancelled"]
+const STATUS_OPTIONS = ["Pending", "Baking", "Decoration", "Ready for Pickup", "Completed", "Cancelled"]
 
 const statusColor: Record<string, string> = {
   "Pending":          "bg-amber-100 text-amber-800",
-  "In Progress":      "bg-blue-100 text-blue-800",
   "Baking":           "bg-orange-100 text-orange-800",
   "Decoration":       "bg-purple-100 text-purple-800",
   "Ready for Pickup": "bg-teal-100 text-teal-800",

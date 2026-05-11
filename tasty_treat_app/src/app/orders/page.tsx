@@ -37,7 +37,6 @@ const STATUS_PIPELINE = ["Pending", "In Progress", "Baking", "Decoration", "Read
 
 const STAGES: { name: string; icon: React.ReactNode }[] = [
   { name: "Order Confirmed",   icon: <Check className="w-5 h-5" /> },
-  { name: "In Progress",       icon: <ChefHat className="w-5 h-5" /> },
   { name: "Baking",            icon: <ChefHat className="w-5 h-5" /> },
   { name: "Decoration",        icon: <Palette className="w-5 h-5" /> },
   { name: "Ready for Pickup",  icon: <Package className="w-5 h-5" /> },
@@ -46,8 +45,10 @@ const STAGES: { name: string; icon: React.ReactNode }[] = [
 
 function stageStatus(stageIndex: number, statusIndex: number): "completed" | "in-progress" | "pending" {
   if (stageIndex === 0) return "completed"   // Order Confirmed is always done
-  if (stageIndex < statusIndex) return "completed"
-  if (stageIndex === statusIndex) return "in-progress"
+  // Offset by 1 because "In Progress" is removed from visible stages but kept in the pipeline
+  const pipelineIndex = stageIndex + 1
+  if (pipelineIndex < statusIndex) return "completed"
+  if (pipelineIndex === statusIndex) return "in-progress"
   return "pending"
 }
 
