@@ -63,8 +63,8 @@ function Carousel({
 
   const onSelect = React.useCallback((api: CarouselApi) => {
     if (!api) return
-    setCanScrollPrev(api.canScrollPrev())
-    setCanScrollNext(api.canScrollNext())
+    setCanScrollPrev(api.selectedScrollSnap() > 0)
+    setCanScrollNext(api.selectedScrollSnap() < api.scrollSnapList().length - 1)
   }, [])
 
   const scrollPrev = React.useCallback(() => {
