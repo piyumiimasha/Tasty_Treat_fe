@@ -198,7 +198,7 @@ export default function StatisticsPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                       <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `Rs.${(v/1000).toFixed(0)}k`} />
-                      <Tooltip formatter={(v: number) => [`Rs. ${v.toLocaleString()}`, "Revenue"]} />
+                      <Tooltip formatter={(v: number | undefined) => [`Rs. ${(v ?? 0).toLocaleString()}`, "Revenue"]} />
                       <Line type="monotone" dataKey="revenue" stroke="var(--color-accent)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                     </LineChart>
                   </ResponsiveContainer>
