@@ -198,7 +198,7 @@ export default function StatisticsPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                       <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `Rs.${(v/1000).toFixed(0)}k`} />
-                      <Tooltip formatter={(v: number | undefined) => [`Rs. ${(v ?? 0).toLocaleString()}`, "Revenue"]} />
+                      <Tooltip formatter={(v: any) => [`Rs. ${(v ?? 0).toLocaleString()}`, "Revenue"]} />
                       <Line type="monotone" dataKey="revenue" stroke="var(--color-accent)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                     </LineChart>
                   </ResponsiveContainer>
@@ -246,7 +246,7 @@ export default function StatisticsPage() {
                               <Cell key={entry.name} fill={STATUS_COLORS[entry.name] ?? PIE_COLORS[i % PIE_COLORS.length]} />
                             ))}
                           </Pie>
-                          <Tooltip formatter={(v: number | undefined, name: string | undefined) => [v ?? 0, name ?? ""]} />
+                          <Tooltip formatter={(v: any, name: any) => [v ?? 0, name ?? ""]} />
                         </PieChart>
                       </ResponsiveContainer>
                       <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-2">
@@ -274,7 +274,7 @@ export default function StatisticsPage() {
                       <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                       <YAxis yAxisId="left"  tick={{ fontSize: 11 }} tickFormatter={(v) => `Rs.${(v/1000).toFixed(0)}k`} />
                       <YAxis yAxisId="right" orientation="right" allowDecimals={false} tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(v: number | undefined, name: string | undefined) => name === "Revenue" ? [`Rs. ${(v ?? 0).toLocaleString()}`, name] : [v ?? 0, name ?? ""]} />
+                      <Tooltip formatter={(v: any, name: any) => name === "Revenue" ? [`Rs. ${(v ?? 0).toLocaleString()}`, name] : [v ?? 0, name ?? ""]} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
                       <Bar yAxisId="left"  dataKey="revenue" name="Revenue"      fill="var(--color-accent)" opacity={0.85} radius={[4,4,0,0]} />
                       <Bar yAxisId="right" dataKey="orders"  name="Total Orders" fill="var(--color-primary)" opacity={0.7}  radius={[4,4,0,0]} />
