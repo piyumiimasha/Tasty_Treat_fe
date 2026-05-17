@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Send, ArrowLeft, MessageCircle } from "lucide-react"
+import { Send, MessageCircle } from "lucide-react"
 import Link from "next/link"
 import { getUserInfo } from "@/lib/api/auth"
 import {
@@ -13,6 +13,9 @@ import {
   ConversationUserDto,
   getConversation,
   getConversationUsers,
+  getDirectConversation,
+  getDirectPartners,
+  markDirectMessagesRead,
   markMessagesRead,
   sendMessage,
 } from "@/lib/api/chat"
@@ -260,21 +263,41 @@ function AdminChat({ adminId }: { adminId: number }) {
 
 // ─── User view ───────────────────────────────────────────────────────────────
 
+type UserPanel =
+  | { kind: "admin" }
+  | { kind: "direct"; partnerId: number; partnerName: string }
+
 function UserChat({ userId }: { userId: number }) {
+  const [panel, setPanel] = useState<UserPanel>({ kind: "admin" })
+  const [partners, setPartners] = useState<ConversationUserDto[]>([])
   const [messages, setMessages] = useState<ChatMsgDto[]>([])
   const [input, setInput] = useState("")
   const [sending, setSending] = useState(false)
   const messagesRef = useRef<HTMLDivElement>(null)
   const shouldAutoScroll = useRef(true)
 
-  const loadMessages = useCallback(async () => {
-    try {
-      const data = await getConversation(userId)
-      setMessages(data)
-    } catch {}
+  const loadPartners = useCallback(async () => {
+    try { setPartners(await getDirectPartners(userId)) } catch {}
   }, [userId])
 
+  const loadMessages = useCallback(async () => {
+    try {
+      setMessages(
+        panel.kind === "admin"
+          ? await getConversation(userId)
+          : await getDirectConversation(userId, panel.partnerId)
+      )
+    } catch {}
+  }, [panel, userId])
+
   useEffect(() => {
+    loadPartners()
+    const id = setInterval(loadPartners, 5000)
+    return () => clearInterval(id)
+  }, [loadPartners])
+
+  useEffect(() => {
+    shouldAutoScroll.current = true
     loadMessages()
     const id = setInterval(loadMessages, 3000)
     return () => clearInterval(id)
@@ -288,7 +311,7 @@ function UserChat({ userId }: { userId: number }) {
     }
     el.addEventListener("scroll", onScroll)
     return () => el.removeEventListener("scroll", onScroll)
-  }, [])
+  }, [panel])
 
   useEffect(() => {
     const el = messagesRef.current
@@ -300,7 +323,11 @@ function UserChat({ userId }: { userId: number }) {
     try {
       setSending(true)
       shouldAutoScroll.current = true
-      const msg = await sendMessage(userId, input.trim())
+      const msg = await sendMessage(
+        userId,
+        input.trim(),
+        panel.kind === "direct" ? panel.partnerId : undefined
+      )
       setMessages((prev) => [...prev, msg])
       setInput("")
     } catch {} finally {
@@ -308,78 +335,148 @@ function UserChat({ userId }: { userId: number }) {
     }
   }
 
+  const isAdmin = panel.kind === "admin"
+  const headerName = isAdmin ? "Baker Support" : panel.partnerName
+  const headerSub  = isAdmin ? "Available 9AM – 6PM" : "Delivery Team"
+
   return (
-    <main className="flex flex-1 flex-col overflow-hidden bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto max-w-3xl px-4 py-3 flex items-center gap-3">
-          <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div className="flex items-center gap-3 flex-1">
-            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center">
-              <MessageCircle className="w-5 h-5 text-primary-foreground" />
+    <div className="flex flex-1 overflow-hidden bg-background">
+
+      {/* ── Sidebar ── */}
+      <aside className="w-72 flex-shrink-0 border-r border-border flex flex-col overflow-hidden bg-background">
+        <div className="px-5 py-4 border-b border-border">
+          <p className="text-sm font-semibold text-foreground">Messages</p>
+        </div>
+
+        {/* Baker Support */}
+        <button
+          onClick={() => setPanel({ kind: "admin" })}
+          className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors border-b border-border/40 ${
+            isAdmin
+              ? "bg-accent/8 border-l-[3px] border-l-accent"
+              : "hover:bg-muted/60"
+          }`}
+        >
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <MessageCircle className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground">Baker Support</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Available 9AM – 6PM</p>
+          </div>
+        </button>
+
+        {/* Delivery person threads — only rendered when they exist */}
+        {partners.map((p) => (
+          <button
+            key={p.userId}
+            onClick={() => {
+              setPanel({ kind: "direct", partnerId: p.userId, partnerName: p.name })
+              markDirectMessagesRead(p.userId, userId).then(loadPartners).catch(() => {})
+            }}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors border-b border-border/40 ${
+              panel.kind === "direct" && panel.partnerId === p.userId
+                ? "bg-accent/8 border-l-[3px] border-l-accent"
+                : "hover:bg-muted/60"
+            }`}
+          >
+            <Avatar className="w-10 h-10 flex-shrink-0">
+              <AvatarFallback className="bg-sky-100 text-sky-700 text-sm font-semibold">
+                {initials(p.name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-sm font-semibold text-foreground truncate">{p.name}</span>
+                {p.unreadCount > 0 && (
+                  <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                    {p.unreadCount}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">{p.lastMessage}</p>
             </div>
-            <div>
-              <p className="font-semibold text-foreground text-sm">Baker Support</p>
-              <p className="text-xs text-muted-foreground">Available 9AM – 6PM</p>
+          </button>
+        ))}
+      </aside>
+
+      {/* ── Conversation panel ── */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+        {/* Header */}
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-border flex-shrink-0">
+          {isAdmin ? (
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <MessageCircle className="w-4.5 h-4.5 text-primary" />
             </div>
+          ) : (
+            <Avatar className="w-9 h-9 flex-shrink-0">
+              <AvatarFallback className="bg-sky-100 text-sky-700 text-sm font-semibold">
+                {initials(headerName)}
+              </AvatarFallback>
+            </Avatar>
+          )}
+          <div>
+            <p className="font-semibold text-foreground text-sm">{headerName}</p>
+            <p className="text-xs text-muted-foreground">{headerSub}</p>
           </div>
         </div>
-      </header>
 
-      {/* Messages */}
-      <div ref={messagesRef} className="flex-1 overflow-y-auto no-scrollbar min-h-0 mx-auto w-full max-w-3xl px-4 py-6 space-y-3">
-        {messages.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Start a conversation with our bakers!</p>
-          </div>
-        )}
-        {messages.map((msg) => {
-          const isMe = msg.senderId === userId
-          return (
-            <div key={msg.msgId} className={`flex gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
-              {!isMe && (
-                <Avatar className="w-7 h-7 flex-shrink-0 mt-1">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-                    BC
-                  </AvatarFallback>
-                </Avatar>
-              )}
-              <div className={`max-w-xs md:max-w-sm flex flex-col gap-0.5 ${isMe ? "items-end" : "items-start"}`}>
-                <div
-                  className={`px-4 py-2 rounded-2xl text-sm leading-relaxed ${
+        {/* Messages */}
+        <div ref={messagesRef} className="flex-1 overflow-y-auto no-scrollbar min-h-0 py-5 px-6 space-y-3">
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full min-h-[200px] gap-2 text-muted-foreground">
+              <MessageCircle className="w-9 h-9 opacity-25" />
+              <p className="text-sm">
+                {isAdmin ? "Start a conversation with our bakers!" : "No messages yet."}
+              </p>
+            </div>
+          )}
+          {messages.map((msg) => {
+            const isMe = msg.senderId === userId
+            return (
+              <div key={msg.msgId} className={`flex gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
+                {!isMe && (
+                  <Avatar className="w-7 h-7 flex-shrink-0 mt-1">
+                    <AvatarFallback className={`text-xs font-semibold ${
+                      isAdmin ? "bg-primary/10 text-primary" : "bg-sky-100 text-sky-700"
+                    }`}>
+                      {isAdmin ? "BC" : initials(panel.kind === "direct" ? panel.partnerName : "")}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                <div className={`max-w-sm flex flex-col gap-0.5 ${isMe ? "items-end" : "items-start"}`}>
+                  <div className={`px-3.5 py-2 rounded-2xl text-sm leading-relaxed ${
                     isMe
                       ? "bg-primary text-primary-foreground rounded-tr-sm"
                       : "bg-muted text-foreground rounded-tl-sm"
-                  }`}
-                >
-                  {msg.msgTxt}
+                  }`}>
+                    {msg.msgTxt}
+                  </div>
+                  <span className="text-xs text-muted-foreground px-1">{formatTime(msg.createdAt)}</span>
                 </div>
-                <span className="text-xs text-muted-foreground px-1">{formatTime(msg.createdAt)}</span>
               </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Input */}
-      <div className="border-t border-border bg-background flex-shrink-0">
-        <div className="mx-auto max-w-3xl px-4 py-4 flex gap-2">
-          <Input
-            placeholder="Ask about flavors, designs, delivery…"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-            className="flex-1"
-          />
-          <Button onClick={handleSend} disabled={sending || !input.trim()} size="icon">
-            <Send className="w-4 h-4" />
-          </Button>
+            )
+          })}
         </div>
-      </div>
-    </main>
+
+        {/* Input */}
+        <div className="border-t border-border px-6 py-4 flex-shrink-0 bg-background">
+          <div className="flex gap-2">
+            <Input
+              placeholder={isAdmin ? "Ask about flavors, designs, delivery…" : `Reply to ${headerName}…`}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend() } }}
+              className="flex-1"
+            />
+            <Button onClick={handleSend} disabled={sending || !input.trim()} size="icon">
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </main>
+    </div>
   )
 }
 

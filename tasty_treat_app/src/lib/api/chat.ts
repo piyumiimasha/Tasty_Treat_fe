@@ -49,6 +49,25 @@ export async function markMessagesRead(fromUserId: number): Promise<void> {
   });
 }
 
+export async function getDirectPartners(userId: number): Promise<ConversationUserDto[]> {
+  const res = await fetch(`${API_BASE_URL}/api/ChatMessages/direct-partners/${userId}`, { headers: headers() });
+  if (!res.ok) throw new Error('Failed to fetch direct partners');
+  return res.json();
+}
+
+export async function markDirectMessagesRead(fromUserId: number, toUserId: number): Promise<void> {
+  await fetch(`${API_BASE_URL}/api/ChatMessages/direct-mark-read/${fromUserId}/${toUserId}`, {
+    method: 'PUT',
+    headers: headers(),
+  });
+}
+
+export async function getDirectConversation(user1Id: number, user2Id: number): Promise<ChatMsgDto[]> {
+  const res = await fetch(`${API_BASE_URL}/api/ChatMessages/direct/${user1Id}/${user2Id}`, { headers: headers() });
+  if (!res.ok) throw new Error('Failed to fetch direct conversation');
+  return res.json();
+}
+
 export async function sendMessage(senderId: number, msgTxt: string, recipientId?: number): Promise<ChatMsgDto> {
   const res = await fetch(`${API_BASE_URL}/api/ChatMessages`, {
     method: 'POST',
