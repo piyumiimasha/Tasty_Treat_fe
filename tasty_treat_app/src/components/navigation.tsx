@@ -96,6 +96,7 @@ export default function Navigation() {
   ]
 
   const isAdmin = userInfo?.role?.toLowerCase() === "admin"
+  const isDeliveryPerson = userInfo?.role?.toLowerCase() === "deliveryperson"
 
   return (
     <header
@@ -118,8 +119,8 @@ export default function Navigation() {
             </span>
           </Link>
 
-          {/* ── Search bar + Filters button (home page only) ── */}
-          {isHomePage && (
+          {/* ── Search bar + Filters button (home page only, not for delivery person) ── */}
+          {isHomePage && !isDeliveryPerson && (
             <div className="flex items-center gap-2 flex-1 max-w-md">
               {/* search input */}
               <div className="relative flex-1">
@@ -157,28 +158,30 @@ export default function Navigation() {
             </div>
           )}
 
-          {/* ── Nav links ── */}
-          <nav className="hidden lg:flex items-center gap-0.5 ml-auto">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`relative px-3.5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                  pathname === link.href
-                    ? "text-accent bg-accent/10"
-                    : "text-foreground/65 hover:text-foreground hover:bg-muted"
-                }`}
-              >
-                {link.label}
-                {pathname === link.href && (
-                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />
-                )}
-              </Link>
-            ))}
-          </nav>
+          {/* ── Nav links (hidden for delivery person) ── */}
+          {!isDeliveryPerson && (
+            <nav className="hidden lg:flex items-center gap-0.5 ml-auto">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`relative px-3.5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                    pathname === link.href
+                      ? "text-accent bg-accent/10"
+                      : "text-foreground/65 hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  {link.label}
+                  {pathname === link.href && (
+                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />
+                  )}
+                </Link>
+              ))}
+            </nav>
+          )}
 
           {/* ── Right actions ── */}
-          <div className={`flex items-center gap-2 ${isHomePage ? "" : "ml-auto"}`}>
+          <div className={`flex items-center gap-2 ${isHomePage && !isDeliveryPerson ? "" : "ml-auto"}`}>
             {isAdmin && (
               <Link
                 href="/admin"
@@ -192,24 +195,39 @@ export default function Navigation() {
               </Link>
             )}
 
+            {isDeliveryPerson && (
+              <Link
+                href="/delivery"
+                className={`hidden lg:inline-flex px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                  pathname.startsWith("/delivery")
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                }`}
+              >
+                Deliveries
+              </Link>
+            )}
+
             {isLoggedIn && <NotificationBell />}
 
-            <Link
-              href="/cart"
-              className={`relative flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                pathname === "/cart"
-                  ? "bg-accent text-white shadow-md shadow-accent/25"
-                  : "bg-accent/10 text-accent hover:bg-accent hover:text-white"
-              }`}
-            >
-              <ShoppingCart className="w-4 h-4" />
-              <span className="hidden sm:inline">Cart</span>
-              {itemCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
-                  {itemCount}
-                </span>
-              )}
-            </Link>
+            {!isDeliveryPerson && (
+              <Link
+                href="/cart"
+                className={`relative flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                  pathname === "/cart"
+                    ? "bg-accent text-white shadow-md shadow-accent/25"
+                    : "bg-accent/10 text-accent hover:bg-accent hover:text-white"
+                }`}
+              >
+                <ShoppingCart className="w-4 h-4" />
+                <span className="hidden sm:inline">Cart</span>
+                {itemCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                    {itemCount}
+                  </span>
+                )}
+              </Link>
+            )}
 
             {isLoggedIn ? (
               <DropdownMenu>

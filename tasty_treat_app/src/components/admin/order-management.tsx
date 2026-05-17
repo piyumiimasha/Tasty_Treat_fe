@@ -16,15 +16,17 @@ function headers(): HeadersInit {
 }
 
 
-const STATUS_OPTIONS = ["Pending", "Baking", "Decoration", "Ready for Pickup", "Completed", "Cancelled"]
+const STATUS_OPTIONS = ["Pending", "Baking", "Decoration", "Ready for Pickup", "Ready for Delivery", "Delivery Completed", "Completed", "Cancelled"]
 
 const statusColor: Record<string, string> = {
-  "Pending":          "bg-amber-100 text-amber-800",
-  "Baking":           "bg-orange-100 text-orange-800",
-  "Decoration":       "bg-purple-100 text-purple-800",
-  "Ready for Pickup": "bg-teal-100 text-teal-800",
-  "Completed":        "bg-green-100 text-green-800",
-  "Cancelled":        "bg-red-100 text-red-800",
+  "Pending":            "bg-amber-100 text-amber-800",
+  "Baking":             "bg-orange-100 text-orange-800",
+  "Decoration":         "bg-purple-100 text-purple-800",
+  "Ready for Pickup":   "bg-teal-100 text-teal-800",
+  "Ready for Delivery": "bg-sky-100 text-sky-800",
+  "Delivery Completed": "bg-emerald-100 text-emerald-800",
+  "Completed":          "bg-green-100 text-green-800",
+  "Cancelled":          "bg-red-100 text-red-800",
 }
 
 export default function OrderManagement() {
