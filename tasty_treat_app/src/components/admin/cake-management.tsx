@@ -48,21 +48,20 @@ function CakeFormFields({ formData, setFormData, imagePreviews, handleImageChang
 
       <div>
         <Label htmlFor="category">Category *</Label>
-        <Input
+        <select
           id="category"
-          list="category-options"
-          placeholder="Type or select a category"
+          className="w-full rounded-md border border-input bg-background px-3 py-2 font-sans text-sm"
           value={formData.category}
           onChange={(e) => {
             const selected = categories.find(c => c.name === e.target.value)
             setFormData({ ...formData, category: e.target.value, categoryId: selected?.categoryId })
           }}
-        />
-        <datalist id="category-options">
+        >
+          <option value="">Select a category</option>
           {categories.map((cat) => (
-            <option key={cat.categoryId} value={cat.name} />
+            <option key={cat.categoryId} value={cat.name}>{cat.name}</option>
           ))}
-        </datalist>
+        </select>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
