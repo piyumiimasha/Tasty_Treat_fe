@@ -17,7 +17,9 @@ import {
 } from "@/lib/api/customization-options"
 import {
   getCustomizationTypes,
+  createCustomizationType,
   updateCustomizationType,
+  deleteCustomizationType,
   type CustomizationTypeDto,
 } from "@/lib/api/customization-types"
 
@@ -50,6 +52,15 @@ export default function DesignerOptions() {
   const [saving, setSaving]                   = useState(false)
   const [deleteId, setDeleteId]               = useState<number | null>(null)
   const [deleting, setDeleting]               = useState(false)
+
+  // Type management state
+  const [newTypeName, setNewTypeName]         = useState("")
+  const [addingType, setAddingType]           = useState(false)
+  const [editingTypeId, setEditingTypeId]     = useState<number | null>(null)
+  const [editingTypeName, setEditingTypeName] = useState("")
+  const [typeActionSaving, setTypeActionSaving] = useState(false)
+  const [deleteTypeId, setDeleteTypeId]       = useState<number | null>(null)
+  const [deletingType, setDeletingType]       = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -110,6 +121,53 @@ export default function DesignerOptions() {
     }
   }
 
+  const handleAddType = async () => {
+    const name = newTypeName.trim()
+    if (!name) return
+    setTypeActionSaving(true)
+    try {
+      const created = await createCustomizationType({ name })
+      setTypes((prev) => [...prev, created])
+      setActiveTypeId(created.typeId)
+      setNewTypeName("")
+      toast({ title: "Created", description: `"${created.name}" type added.` })
+    } catch {
+      toast({ title: "Error", description: "Failed to create type.", variant: "destructive" })
+    } finally {
+      setTypeActionSaving(false)
+    }
+  }
+
+  const handleUpdateType = async (id: number) => {
+    const name = editingTypeName.trim()
+    if (!name) return
+    setTypeActionSaving(true)
+    try {
+      const updated = await updateCustomizationType(id, { name })
+      setTypes((prev) => prev.map((t) => t.typeId === id ? { ...t, name: updated.name } : t))
+      setEditingTypeId(null)
+    } catch {
+      toast({ title: "Error", description: "Failed to rename type.", variant: "destructive" })
+    } finally {
+      setTypeActionSaving(false)
+    }
+  }
+
+  const confirmDeleteType = async () => {
+    if (!deleteTypeId) return
+    setDeletingType(true)
+    try {
+      await deleteCustomizationType(deleteTypeId)
+      setTypes((prev) => prev.filter((t) => t.typeId !== deleteTypeId))
+      if (activeTypeId === deleteTypeId) setActiveTypeId(types.find((t) => t.typeId !== deleteTypeId)?.typeId ?? null)
+      setDeleteTypeId(null)
+    } catch {
+      toast({ title: "Error", description: "Failed to delete type.", variant: "destructive" })
+    } finally {
+      setDeletingType(false)
+    }
+  }
+
   const handleToggleMultiSelect = async (type: CustomizationTypeDto) => {
     try {
       const updated = await updateCustomizationType(type.typeId, { isMultiSelect: !type.isMultiSelect })
@@ -140,33 +198,81 @@ export default function DesignerOptions() {
     <div className="flex gap-6 min-h-[520px]">
 
       {/* ── Sidebar ── */}
-      <aside className="w-52 flex-shrink-0 space-y-1">
+      <aside className="w-52 flex-shrink-0 flex flex-col gap-1">
         {types.map((type) => {
-          const meta   = TYPE_META[type.name] ?? DEFAULT_META
+          const meta   = TYPE_META[type.name.toLowerCase()] ?? DEFAULT_META
           const count  = options.filter((o) => o.typeId === type.typeId).length
           const active = activeTypeId === type.typeId
+          const isEditing = editingTypeId === type.typeId
           return (
-            <button
-              key={type.typeId}
-              onClick={() => setActiveTypeId(type.typeId)}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                active
-                  ? "bg-accent text-white shadow-sm shadow-accent/20"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-            >
-              <span className="flex items-center gap-2.5">
-                <span className={active ? "text-white" : meta.color}>{meta.icon}</span>
-                {type.name.charAt(0).toUpperCase() + type.name.slice(1)}
-              </span>
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-                active ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
-              }`}>
-                {count}
-              </span>
-            </button>
+            <div key={type.typeId} className="group relative">
+              {isEditing ? (
+                <div className="flex items-center gap-1 px-1">
+                  <Input
+                    autoFocus
+                    value={editingTypeName}
+                    onChange={(e) => setEditingTypeName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleUpdateType(type.typeId)
+                      if (e.key === "Escape") setEditingTypeId(null)
+                    }}
+                    className="h-8 text-sm"
+                  />
+                  <Button size="sm" className="h-8 w-8 p-0 flex-shrink-0" onClick={() => handleUpdateType(type.typeId)} disabled={typeActionSaving}>✓</Button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setActiveTypeId(type.typeId)}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    active
+                      ? "bg-accent text-white shadow-sm shadow-accent/20"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <span className={active ? "text-white" : meta.color}>{meta.icon}</span>
+                    {type.name.charAt(0).toUpperCase() + type.name.slice(1)}
+                  </span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+                    active ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              )}
+              {!isEditing && (
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-0.5">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setEditingTypeId(type.typeId); setEditingTypeName(type.name) }}
+                    className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background/80 transition-colors"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDeleteTypeId(type.typeId) }}
+                    className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </div>
           )
         })}
+
+        {/* Add new type */}
+        <div className="flex items-center gap-1 pt-1 px-1">
+          <Input
+            placeholder="New type…"
+            value={newTypeName}
+            onChange={(e) => setNewTypeName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleAddType() }}
+            className="h-8 text-sm"
+          />
+          <Button size="sm" className="h-8 w-8 p-0 flex-shrink-0" onClick={handleAddType} disabled={!newTypeName.trim() || typeActionSaving}>
+            <Plus className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       </aside>
 
       {/* ── Main panel ── */}
@@ -312,6 +418,15 @@ export default function DesignerOptions() {
         description="This customisation option will be permanently removed."
         onConfirm={confirmDelete}
         loading={deleting}
+      />
+
+      <ConfirmDeleteDialog
+        open={!!deleteTypeId}
+        onOpenChange={(open) => { if (!open) setDeleteTypeId(null) }}
+        title="Delete Type"
+        description="This customisation type and all its options will be permanently removed."
+        onConfirm={confirmDeleteType}
+        loading={deletingType}
       />
     </div>
   )
