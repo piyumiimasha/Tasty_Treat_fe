@@ -25,7 +25,7 @@ export default function PriceSummaryCard({ breakdown }: { breakdown: PriceBreakd
 
         <div className="border-t border-border pt-2 mt-2 space-y-1.5">
           <div className="flex justify-between text-sm text-foreground">
-            <span>Subtotal</span>
+            <span>{breakdown.layerCount > 1 ? `Subtotal (×${breakdown.layerCount} tiers)` : "Subtotal"}</span>
             <span>Rs. {breakdown.subtotal.toLocaleString()}</span>
           </div>
           <div className="flex justify-between text-sm text-muted-foreground">

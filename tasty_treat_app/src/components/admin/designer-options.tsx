@@ -22,6 +22,7 @@ import {
   deleteCustomizationType,
   type CustomizationTypeDto,
 } from "@/lib/api/customization-types"
+import { getBasePrice, updateBasePrice } from "@/lib/api/app-settings"
 
 // Static icon/colour metadata keyed by type.name
 const TYPE_META: Record<string, { icon: React.ReactNode; color: string; accent: string }> = {
@@ -54,13 +55,17 @@ export default function DesignerOptions() {
   const [deleting, setDeleting]               = useState(false)
 
   // Type management state
-  const [newTypeName, setNewTypeName]         = useState("")
-  const [addingType, setAddingType]           = useState(false)
-  const [editingTypeId, setEditingTypeId]     = useState<number | null>(null)
-  const [editingTypeName, setEditingTypeName] = useState("")
+  const [newTypeName, setNewTypeName]           = useState("")
+  const [editingTypeId, setEditingTypeId]       = useState<number | null>(null)
+  const [editingTypeName, setEditingTypeName]   = useState("")
   const [typeActionSaving, setTypeActionSaving] = useState(false)
-  const [deleteTypeId, setDeleteTypeId]       = useState<number | null>(null)
-  const [deletingType, setDeletingType]       = useState(false)
+  const [deleteTypeId, setDeleteTypeId]         = useState<number | null>(null)
+  const [deletingType, setDeletingType]         = useState(false)
+
+  // Base price state
+  const [basePrice, setBasePrice]               = useState<number>(2000)
+  const [basePriceInput, setBasePriceInput]     = useState<string>("2000")
+  const [basePriceSaving, setBasePriceSaving]   = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -81,7 +86,25 @@ export default function DesignerOptions() {
     }
   }, [toast, activeTypeId])
 
-  useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    load()
+    getBasePrice().then((p) => { setBasePrice(p); setBasePriceInput(String(p)) })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSaveBasePrice = async () => {
+    const parsed = parseFloat(basePriceInput)
+    if (isNaN(parsed) || parsed < 0) return
+    setBasePriceSaving(true)
+    try {
+      await updateBasePrice(parsed)
+      setBasePrice(parsed)
+      toast({ title: "Saved", description: `Base price updated to Rs. ${parsed.toLocaleString()}.` })
+    } catch {
+      toast({ title: "Error", description: "Failed to update base price.", variant: "destructive" })
+    } finally {
+      setBasePriceSaving(false)
+    }
+  }
 
   const activeType = types.find((t) => t.typeId === activeTypeId)
   const catMeta    = activeType ? (TYPE_META[activeType.name] ?? DEFAULT_META) : DEFAULT_META
@@ -195,6 +218,29 @@ export default function DesignerOptions() {
   }
 
   return (
+    <div>
+      {/* ── Base price ── */}
+      <div className="flex items-center gap-3 mb-6 pb-5 border-b border-border">
+        <div>
+          <p className="text-sm font-medium text-foreground">Base Price (Rs.)</p>
+          <p className="text-xs text-muted-foreground">Starting price for a 1-tier cake before customizations</p>
+        </div>
+        <div className="flex items-center gap-2 ml-auto">
+          <Input
+            type="number"
+            min="0"
+            step="50"
+            value={basePriceInput}
+            onChange={(e) => setBasePriceInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSaveBasePrice() }}
+            className="w-32 h-9 text-sm"
+          />
+          <Button size="sm" onClick={handleSaveBasePrice} disabled={basePriceSaving} className="h-9">
+            {basePriceSaving ? "Saving…" : "Save"}
+          </Button>
+        </div>
+      </div>
+
     <div className="flex gap-6 min-h-[520px]">
 
       {/* ── Sidebar ── */}
@@ -428,6 +474,7 @@ export default function DesignerOptions() {
         onConfirm={confirmDeleteType}
         loading={deletingType}
       />
+    </div>
     </div>
   )
 }

@@ -10,6 +10,7 @@ import { getCustomizationTypes, type CustomizationTypeDto } from "@/lib/api/cust
 import { generateCakePreview } from "@/lib/api/cake-preview"
 import { calculateBreakdown } from "@/lib/customizer-pricing"
 import { type CakeDesign, type OptionCategory } from "@/lib/customizer-options"
+import { getBasePrice } from "@/lib/api/app-settings"
 import OptionPillGroup from "./option-pill-group"
 import PreviewPanel from "./preview-panel"
 import PriceSummaryCard from "./price-summary-card"
@@ -43,13 +44,15 @@ export default function CustomizerShell() {
   const [apiTypes, setApiTypes]         = useState<CustomizationTypeDto[]>([])
   const [apiOptions, setApiOptions]     = useState<CustomizationOptionDto[]>([])
   const [loadingOptions, setLoadingOptions] = useState(true)
+  const [basePrice, setBasePrice]       = useState(2000)
 
   useEffect(() => {
     setLoadingOptions(true)
-    Promise.all([getCustomizationTypes(), getDesignerOptions()])
-      .then(([types, options]) => {
+    Promise.all([getCustomizationTypes(), getDesignerOptions(), getBasePrice()])
+      .then(([types, options, price]) => {
         setApiTypes(types)
         setApiOptions(options)
+        setBasePrice(price)
       })
       .catch((err) => {
         console.error("[Customizer] failed to load options:", err)
@@ -61,8 +64,8 @@ export default function CustomizerShell() {
   const categories = useMemo(() => buildCategories(apiTypes, apiOptions), [apiTypes, apiOptions])
 
   const breakdown = useMemo(
-    () => calculateBreakdown(design, categories),
-    [design, categories]
+    () => calculateBreakdown(design, categories, basePrice),
+    [design, categories, basePrice]
   )
 
   const setField = (key: string, value: string | string[]) => {
