@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { ShoppingCart, LogOut, LogIn, User, ChevronDown, Cake, Search, X, SlidersHorizontal } from "lucide-react"
+import NotificationBell from "@/components/notification-bell"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { isAuthenticated, getUserInfo, logout, type UserInfo } from "@/lib/api/auth"
@@ -190,6 +191,8 @@ export default function Navigation() {
                 Admin
               </Link>
             )}
+
+            {isLoggedIn && <NotificationBell />}
 
             <Link
               href="/cart"
