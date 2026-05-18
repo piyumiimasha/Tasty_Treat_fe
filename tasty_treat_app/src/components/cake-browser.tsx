@@ -2,8 +2,11 @@
 
 import { useState, useMemo, useEffect, useRef } from "react"
 import CakeGallery from "./cake-gallery"
+import CakeModal from "./cake-modal"
+import SignatureCakes from "./signature-cakes"
 import FilterPanel from "./filter-panel"
 import { getAllItems, getItemsByCategory } from "@/lib/api/items"
+import { getItemById } from "@/lib/api/items"
 import { getCategories } from "@/lib/api/categories"
 import { getDistinctFlavours } from "@/lib/api/item-flavours"
 import { mapItemToCake, Cake } from "@/lib/mappers/item-mapper"
@@ -30,9 +33,16 @@ export default function CakeBrowser() {
   const [selectedFlavors, setSelectedFlavors]   = useState<string[]>([])
   const [searchQuery, setSearchQuery]           = useState("")
   const [filterOpen, setFilterOpen]             = useState(false)
+  const [selectedCake, setSelectedCake]         = useState<Cake | null>(null)
+  const [loadingCake, setLoadingCake]           = useState(false)
   const galleryRef    = useRef<HTMLDivElement>(null)
   const isFirstRender = useRef(true)
   const { toast }     = useToast()
+
+  const SIGNATURE_NAMES = ["butter cake", "chocolate cake"]
+
+  const isSignature = (cake: Cake) =>
+    SIGNATURE_NAMES.some((n) => cake.name.toLowerCase().includes(n))
 
   /* ── listen for events from the nav bar ── */
   useEffect(() => {
@@ -82,6 +92,27 @@ export default function CakeBrowser() {
       return priceMatch && flavorMatch && searchMatch
     })
   }, [allCakes, priceRange, selectedFlavors, searchQuery])
+
+  const signatureCakes = useMemo(
+    () => filteredCakes.filter(isSignature),
+    [filteredCakes]
+  )
+  const otherCakes = useMemo(
+    () => filteredCakes.filter((c) => !isSignature(c)),
+    [filteredCakes]
+  )
+
+  const handleCakeSelect = async (cake: Cake) => {
+    try {
+      setLoadingCake(true)
+      const item = await getItemById(cake.id)
+      setSelectedCake(mapItemToCake(item))
+    } catch {
+      toast({ title: "Error", description: "Failed to load cake details.", variant: "destructive" })
+    } finally {
+      setLoadingCake(false)
+    }
+  }
 
   const activeFilterCount =
     selectedFlavors.length +
@@ -215,6 +246,7 @@ export default function CakeBrowser() {
                 <span className="font-semibold text-foreground">{filteredCakes.length}</span> cake{filteredCakes.length !== 1 ? "s" : ""}
               </p>
             </div>
+
             {(activeFilterCount > 0 || searchQuery) && (
               <div className="flex flex-wrap items-center gap-2 mt-4">
                 {searchQuery && (
@@ -265,8 +297,34 @@ export default function CakeBrowser() {
               </button>
             </div>
           ) : (
-            <CakeGallery cakes={filteredCakes} />
+            <>
+              {/* Signature cakes — immersive panels, no card */}
+              <SignatureCakes cakes={signatureCakes} onSelect={handleCakeSelect} />
+
+              {/* All other cakes — standard grid */}
+              {otherCakes.length > 0 && (
+                <>
+                  {signatureCakes.length > 0 && (
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-7 h-px bg-accent" />
+                      <span className="text-[11px] font-semibold tracking-[0.22em] uppercase text-accent">More Creations</span>
+                    </div>
+                  )}
+                  <CakeGallery cakes={otherCakes} />
+                </>
+              )}
+            </>
           )}
+
+          {/* Loading overlay for modal */}
+          {loadingCake && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white" />
+            </div>
+          )}
+
+          {/* Modal for signature cake clicks */}
+          {selectedCake && <CakeModal cake={selectedCake} onClose={() => setSelectedCake(null)} />}
         </div>
 
         {/* Filter sheet — triggered by nav event, no visible button needed here */}

@@ -68,12 +68,43 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
+      <style>{`
+        @keyframes modal-backdrop {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @keyframes modal-slide-up {
+          from { opacity: 0; transform: translateY(32px) scale(0.96); }
+          to   { opacity: 1; transform: translateY(0)    scale(1); }
+        }
+        @keyframes modal-img-pop {
+          from { opacity: 0; transform: scale(0.94); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+        @keyframes modal-slide-right {
+          from { opacity: 0; transform: translateX(22px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes modal-fade-up {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes modal-img-fade {
+          from { opacity: 0; transform: scale(1.03); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        style={{ animation: "modal-backdrop 220ms ease forwards" }}
+      />
 
       {/* Modal */}
       <div
-        className="relative bg-background rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-border/40 animate-fade-in"
+        className="relative bg-background rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-border/40"
+        style={{ animation: "modal-slide-up 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -92,12 +123,14 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
 
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Image Gallery */}
-          <div className="space-y-3">
+          <div className="space-y-3" style={{ animation: "modal-img-pop 460ms cubic-bezier(0.16, 1, 0.3, 1) 60ms both" }}>
             <div className="relative h-88 rounded-xl overflow-hidden bg-muted group" style={{ height: "22rem" }}>
               <img
+                key={currentImageIndex}
                 src={cake.images[currentImageIndex] || "/placeholder.svg"}
                 alt={`${cake.name} view ${currentImageIndex + 1}`}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-full object-cover group-hover:scale-105"
+                style={{ animation: "modal-img-fade 300ms ease forwards", transition: "transform 500ms ease" }}
                 onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg" }}
               />
 
@@ -155,9 +188,9 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
           </div>
 
           {/* Details */}
-          <div className="space-y-5">
+          <div className="space-y-5" style={{ animation: "modal-slide-right 420ms cubic-bezier(0.16, 1, 0.3, 1) 100ms both" }}>
             {/* Price & Rating */}
-            <div>
+            <div style={{ animation: "modal-fade-up 320ms ease 200ms both" }}>
               <div className="flex items-center gap-0.5 mb-3">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star
@@ -186,7 +219,7 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
             </div>
 
             {/* Flavor & Weight */}
-            <div className="space-y-3 pb-5 border-b border-border/60">
+            <div className="space-y-3 pb-5 border-b border-border/60" style={{ animation: "modal-fade-up 320ms ease 270ms both" }}>
               {cake.flavor && (
                 <div>
                   <label className="text-sm font-semibold text-foreground mb-1.5 block">Flavor</label>
@@ -229,7 +262,7 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
             </div>
 
             {/* Quantity & Actions */}
-            <div className="space-y-3">
+            <div className="space-y-3" style={{ animation: "modal-fade-up 320ms ease 340ms both" }}>
               <div className="flex items-center gap-3">
                 <div className="flex items-center rounded-xl border border-border/70 overflow-hidden bg-secondary/30">
                   <button
@@ -304,7 +337,7 @@ export default function CakeModal({ cake, onClose }: CakeModalProps) {
         </div>
 
         {/* Reviews section */}
-        <div className="px-6 pb-6 border-t border-border/60 mt-2 pt-6">
+        <div className="px-6 pb-6 border-t border-border/60 mt-2 pt-6" style={{ animation: "modal-fade-up 320ms ease 420ms both" }}>
           <div className="flex items-center gap-2 mb-4">
             <MessageSquare className="w-5 h-5 text-muted-foreground" />
             <h3 className="font-serif text-lg font-semibold text-primary">
