@@ -84,7 +84,7 @@ function MessageInput({ placeholder, onSend, sending }: {
   }
 
   return (
-    <div className="flex gap-2 items-center px-4 py-3 border-t border-border/60 bg-background/80 flex-shrink-0">
+    <div className="flex gap-2 items-center px-4 py-3 border-t flex-shrink-0" style={{ borderColor: "#b8e2d4", background: "#eaf6f2" }}>
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -152,11 +152,11 @@ function AdminChat({ adminId }: { adminId: number }) {
   const filtered = users.filter(u => u.name.toLowerCase().includes(search.toLowerCase()))
 
   return (
-    <div className="flex flex-1 min-h-0 overflow-hidden rounded-2xl border border-border/60 bg-background shadow-sm">
+    <div className="flex flex-1 min-h-0 overflow-hidden rounded-2xl border shadow-sm" style={{ borderColor: "#b8e2d4", background: "#f4fbf8" }}>
 
       {/* Sidebar */}
-      <aside className="w-72 flex-shrink-0 border-r border-border/50 flex flex-col overflow-hidden">
-        <div className="px-4 py-3.5 border-b border-border/50 bg-muted/20 flex-shrink-0">
+      <aside className="w-72 flex-shrink-0 flex flex-col overflow-hidden border-r" style={{ borderColor: "#b8e2d4" }}>
+        <div className="px-4 py-3.5 border-b flex-shrink-0" style={{ borderColor: "#b8e2d4", background: "#e4f5ef" }}>
           <p className="text-sm font-bold text-primary mb-2.5">Customer Chats</p>
           <input
             placeholder="Search customers…"
@@ -204,7 +204,7 @@ function AdminChat({ adminId }: { adminId: number }) {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {selected ? (
           <>
-            <div className="flex items-center gap-3 px-5 py-3.5 border-b border-border/50 bg-muted/10 flex-shrink-0">
+            <div className="flex items-center gap-3 px-5 py-3.5 border-b flex-shrink-0" style={{ borderColor: "#b8e2d4", background: "#eaf6f2" }}>
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
                 {initials(selected.name)}
               </div>
@@ -296,11 +296,11 @@ function UserChat({ userId }: { userId: number }) {
   const headerSub     = isAdminPanel ? "Typically replies within a few hours" : "Delivery team"
 
   return (
-    <div className="flex flex-1 min-h-0 overflow-hidden rounded-2xl border border-border/60 bg-background shadow-sm">
+    <div className="flex flex-1 min-h-0 overflow-hidden rounded-2xl border shadow-sm" style={{ borderColor: "#b8e2d4", background: "#f4fbf8" }}>
 
       {/* Sidebar */}
-      <aside className="w-64 flex-shrink-0 border-r border-border/50 flex flex-col overflow-hidden">
-        <div className="px-4 py-3.5 border-b border-border/50 bg-muted/20 flex-shrink-0">
+      <aside className="w-64 flex-shrink-0 flex flex-col overflow-hidden border-r" style={{ borderColor: "#b8e2d4" }}>
+        <div className="px-4 py-3.5 border-b flex-shrink-0" style={{ borderColor: "#b8e2d4", background: "#e4f5ef" }}>
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Messages</p>
         </div>
 
@@ -355,7 +355,7 @@ function UserChat({ userId }: { userId: number }) {
       {/* Conversation */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-3.5 border-b border-border/50 bg-muted/10 flex-shrink-0">
+        <div className="flex items-center gap-3 px-5 py-3.5 border-b flex-shrink-0" style={{ borderColor: "#b8e2d4", background: "#eaf6f2" }}>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
             isAdminPanel ? "bg-primary/10" : "bg-sky-100"
           }`}>
@@ -417,7 +417,7 @@ export default function SupportPage() {
   /* ── Not logged in ── */
   if (!userInfo) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center p-6">
+      <main className="min-h-screen flex items-center justify-center p-6" style={{ background: "#edf7f4" }}>
         <div className="text-center space-y-4">
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto">
             <MessageCircle className="w-8 h-8 text-muted-foreground" />
@@ -433,15 +433,15 @@ export default function SupportPage() {
   }
 
   return (
-    <main className="bg-background flex flex-col overflow-hidden" style={{ height: "calc(100vh - 56px)" }}>
+    <main className="flex flex-col overflow-hidden" style={{ height: "calc(100vh - 56px)", background: "#edf7f4" }}>
 
       {/* Page header */}
-      <div className="flex-shrink-0 px-6 py-4 bg-background/80 backdrop-blur-sm">
+      <div className="flex-shrink-0 px-6 py-4" style={{ background: "linear-gradient(135deg, #d0efe6 0%, #edf7f4 100%)" }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 mb-0.5">
-              <div className="w-5 h-[2px] rounded-full bg-accent" />
-              <span className="text-[10px] font-semibold tracking-[0.22em] uppercase text-accent">
+              <div className="w-5 h-[2px] rounded-full" style={{ background: "#2A7A60" }} />
+              <span className="text-[10px] font-semibold tracking-[0.22em] uppercase" style={{ color: "#2A7A60" }}>
                 {isAdmin ? "Admin" : "Help Centre"}
               </span>
             </div>
