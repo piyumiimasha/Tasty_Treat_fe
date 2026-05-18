@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import CakeCard from "./cake-card"
 import CakeModal from "./cake-modal"
 import { getItemById } from "@/lib/api/items"
@@ -15,6 +15,24 @@ export default function CakeGallery({ cakes }: CakeGalleryProps) {
   const [selectedCake, setSelectedCake] = useState<Cake | null>(null)
   const [loadingCake, setLoadingCake] = useState(false)
   const { toast } = useToast()
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([])
+
+  useEffect(() => {
+    cardRefs.current = cardRefs.current.slice(0, cakes.length)
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("in-view")
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.08 }
+    )
+    cardRefs.current.forEach((ref) => { if (ref) observer.observe(ref) })
+    return () => observer.disconnect()
+  }, [cakes])
 
   const handleCakeClick = async (cake: Cake) => {
     try {
@@ -46,9 +64,16 @@ export default function CakeGallery({ cakes }: CakeGalleryProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {cakes.map((cake) => (
-          <CakeCard key={cake.id} cake={cake} onClick={() => handleCakeClick(cake)} />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {cakes.map((cake, idx) => (
+          <div
+            key={cake.id}
+            ref={(el) => { cardRefs.current[idx] = el }}
+            className="card-reveal"
+            style={{ animationDelay: `${Math.min(idx * 100, 600)}ms` }}
+          >
+            <CakeCard cake={cake} onClick={() => handleCakeClick(cake)} />
+          </div>
         ))}
       </div>
 

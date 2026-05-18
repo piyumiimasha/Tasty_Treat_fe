@@ -35,7 +35,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${_playfair.variable} ${_lato.variable} font-sans antialiased`}>
         <Navigation />
-        <AuthGuard>{children}</AuthGuard>
+        <div className="pt-14 pl-10">
+          <AuthGuard>{children}</AuthGuard>
+        </div>
         <Toaster />
       </body>
     </html>

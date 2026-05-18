@@ -160,3 +160,88 @@
 .animate-fade-in {
   animation: fadeIn 0.35s ease forwards;
 }
+
+/* ── Smooth scroll ── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── Marquee ── */
+@keyframes marqueeLeft {
+  to { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marqueeLeft 30s linear infinite;
+  will-change: transform;
+}
+
+/* ── Word slide-up reveal ── */
+@keyframes wordUp {
+  from { transform: translateY(110%); }
+  to   { transform: translateY(0); }
+}
+.word-up {
+  display: inline-block;
+  animation: wordUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform;
+}
+
+/* ── Scroll-triggered card reveal ── */
+@keyframes cardAppear {
+  from { opacity: 0; transform: translateY(70px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+.card-reveal {
+  opacity: 0;
+  animation: cardAppear 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-play-state: paused;
+}
+.card-reveal.in-view {
+  animation-play-state: running;
+}
+
+/* ── Hero animations ── */
+@keyframes clipRevealUp {
+  from { clip-path: inset(100% 0 0 0); }
+  to   { clip-path: inset(0%   0 0 0); }
+}
+.hero-image-reveal {
+  animation: clipRevealUp 1.1s cubic-bezier(0.77, 0, 0.175, 1) 120ms both;
+}
+
+@keyframes heroImgZoom {
+  from { transform: scale(1.12); }
+  to   { transform: scale(1);    }
+}
+.hero-image-zoom {
+  animation: heroImgZoom 1.6s cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+}
+
+@keyframes heroFade {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+.hero-fade {
+  opacity: 0;
+  animation: heroFade 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes badgeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+.hero-badge {
+  animation: badgeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 950ms both;
+}
+
+@keyframes lineExtend {
+  from { width: 0;    opacity: 0; }
+  to   { width: 52px; opacity: 1; }
+}
+.hero-line {
+  height: 2px;
+  background-color: var(--accent);
+  width: 0;
+  animation: lineExtend 0.7s cubic-bezier(0.22, 1, 0.36, 1) 40ms both;
+}
+

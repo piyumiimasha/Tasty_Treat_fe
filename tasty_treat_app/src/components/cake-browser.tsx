@@ -8,7 +8,8 @@ import { getCategories } from "@/lib/api/categories"
 import { getDistinctFlavours } from "@/lib/api/item-flavours"
 import { mapItemToCake, Cake } from "@/lib/mappers/item-mapper"
 import { useToast } from "@/hooks/use-toast"
-import { Search, X } from "lucide-react"
+import { Search, X, ArrowRight } from "lucide-react"
+import HeroIllustration from "./hero-illustration"
 import {
   Sheet,
   SheetContent,
@@ -16,12 +17,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 
-const HERO_SLIDES = [
-  { image: "/elegant-white-wedding-cake.jpg",       tag: "Wedding Collection", caption: "Timeless elegance for your most special day"    },
-  { image: "/decadent-chocolate-cake.png",           tag: "Birthday Cakes",     caption: "Rich, indulgent cakes worth celebrating"         },
-  { image: "/fresh-strawberry-shortcake-cream.jpg", tag: "Fresh Creations",    caption: "Crafted with the finest seasonal ingredients"    },
-  { image: "/galaxy-cake.jpg",                       tag: "Custom Designs",     caption: "One-of-a-kind creations, uniquely yours"         },
-]
 
 export default function CakeBrowser() {
   const [allCakes, setAllCakes]                 = useState<Cake[]>([])
@@ -32,24 +27,10 @@ export default function CakeBrowser() {
   const [priceRange, setPriceRange]             = useState<[number, number]>([0, 10000])
   const [selectedFlavors, setSelectedFlavors]   = useState<string[]>([])
   const [searchQuery, setSearchQuery]           = useState("")
-  const [activeSlide, setActiveSlide]           = useState(0)
   const [filterOpen, setFilterOpen]             = useState(false)
-  const intervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
-  const galleryRef   = useRef<HTMLDivElement>(null)
+  const galleryRef    = useRef<HTMLDivElement>(null)
   const isFirstRender = useRef(true)
-  const { toast }    = useToast()
-
-  /* ── hero auto-advance ── */
-  useEffect(() => {
-    intervalRef.current = setInterval(() => setActiveSlide((p) => (p + 1) % HERO_SLIDES.length), 3000)
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [])
-
-  const goToSlide = (idx: number) => {
-    if (intervalRef.current) clearInterval(intervalRef.current)
-    setActiveSlide(idx)
-    intervalRef.current = setInterval(() => setActiveSlide((p) => (p + 1) % HERO_SLIDES.length), 3000)
-  }
+  const { toast }     = useToast()
 
   /* ── listen for events from the nav bar ── */
   useEffect(() => {
@@ -136,192 +117,199 @@ export default function CakeBrowser() {
     <div className="flex flex-col w-full min-h-screen bg-background">
 
       {/* ═══════════════════════════════════
-          Hero — fills viewport
+          Hero — split layout
       ═══════════════════════════════════ */}
-      <div className="relative w-full overflow-hidden" style={{ height: "calc(100vh - 60px)" }}>
+      <div
+        className="relative w-full bg-background overflow-hidden"
+        style={{ minHeight: "calc(100vh - 56px)" }}
+      >
+        {/* Ambient light blobs */}
+        <div className="absolute -top-32 right-0 w-[560px] h-[560px] rounded-full bg-accent/5 blur-[90px] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[320px] rounded-full bg-primary/4 blur-[70px] pointer-events-none" />
 
-        {/* slides */}
-        {HERO_SLIDES.map((slide, idx) => (
-          <div
-            key={idx}
-            className="absolute inset-0 transition-opacity duration-1000"
-            style={{ opacity: idx === activeSlide ? 1 : 0 }}
-          >
-            <img src={slide.image} alt={slide.tag} className="w-full h-full object-cover" />
-          </div>
-        ))}
+        <div
+          className="relative max-w-7xl mx-auto px-8 lg:px-14 flex flex-col lg:flex-row items-center gap-10 lg:gap-16 py-14 lg:py-0"
+          style={{ minHeight: "calc(100vh - 56px)" }}
+        >
+          {/* ── Left — copy ── */}
+          <div className="flex-1 flex flex-col justify-center order-2 lg:order-1">
+            <div className="hero-line mb-7" />
 
-        {/* overlays */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/28 to-black/10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/48 via-transparent to-transparent" />
-
-        {/* headline */}
-        <div className="absolute inset-0 flex items-center pointer-events-none">
-          <div className="w-full max-w-7xl mx-auto px-8 lg:px-14">
-            <div className="max-w-lg">
-              <p
-                key={`tag-${activeSlide}`}
-                className="text-white/70 text-xs font-semibold tracking-[0.22em] uppercase mb-4 animate-fade-in-up"
-              >
-                {HERO_SLIDES[activeSlide].tag}
-              </p>
-              <h1
-                key={`h1-${activeSlide}`}
-                className="font-serif text-5xl lg:text-[3.6rem] font-bold text-white leading-[1.1] mb-4 animate-fade-in-up"
-                style={{ animationDelay: "55ms" }}
-              >
-                Every Cake Tells<br />
-                <em className="not-italic" style={{ color: "oklch(0.87 0.07 18)" }}>a Story</em>
-              </h1>
-              <p
-                key={`cap-${activeSlide}`}
-                className="text-white/65 text-base lg:text-lg leading-relaxed animate-fade-in-up"
-                style={{ animationDelay: "110ms" }}
-              >
-                {HERO_SLIDES[activeSlide].caption}
+            <div className="overflow-hidden mb-5">
+              <p className="word-up text-[11px] font-semibold tracking-[0.28em] uppercase text-accent" style={{ animationDelay: "150ms" }}>
+                Artisan Patisserie
               </p>
             </div>
-          </div>
-        </div>
 
-        {/* slide dots only — no counter */}
-        <div className="absolute bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-2">
-          {HERO_SLIDES.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => goToSlide(idx)}
-              aria-label={`Slide ${idx + 1}`}
-              className={`rounded-full transition-all duration-300 ${
-                idx === activeSlide ? "w-6 h-2 bg-white" : "w-2 h-2 bg-white/35 hover:bg-white/65"
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════
-          Filters / results bar
-      ═══════════════════════════════════ */}
-      <div className="w-full bg-white border-b border-border shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-3.5 flex flex-wrap items-center gap-3">
-
-          {/* active chips */}
-          <div className="flex flex-wrap items-center gap-2 flex-1">
-            {searchQuery && (
-              <span className="flex items-center gap-1.5 text-xs bg-accent/10 text-accent px-3 py-1 rounded-full font-medium">
-                &ldquo;{searchQuery}&rdquo;
-                <button
-                  onClick={() => {
-                    setSearchQuery("")
-                    window.dispatchEvent(new CustomEvent("cake-search", { detail: "" }))
-                  }}
-                >
-                  <X className="w-3 h-3" />
-                </button>
+            <h1 className="font-serif text-[3.4rem] sm:text-[4.4rem] lg:text-[5rem] xl:text-[5.8rem] font-bold text-primary leading-[0.92] mb-7">
+              <span className="block">
+                {["Every", "Cake"].map((word, i) => (
+                  <span key={word} className="inline-block" style={{ overflow: "hidden", marginRight: "0.22em", paddingBottom: "0.2em", marginBottom: "-0.2em" }}>
+                    <span className="word-up" style={{ animationDelay: `${200 + i * 90}ms` }}>{word}</span>
+                  </span>
+                ))}
               </span>
-            )}
-            {selectedCategory !== "All Cakes" && (
-              <span className="flex items-center gap-1.5 text-xs bg-secondary text-foreground px-3 py-1 rounded-full font-medium border border-border">
-                {selectedCategory}
-                <button onClick={() => setSelectedCategory("All Cakes")}><X className="w-3 h-3" /></button>
+              <span className="block">
+                {["Tells", "a"].map((word, i) => (
+                  <span key={word} className="inline-block" style={{ overflow: "hidden", marginRight: "0.22em", paddingBottom: "0.2em", marginBottom: "-0.2em" }}>
+                    <span className="word-up" style={{ animationDelay: `${380 + i * 90}ms` }}>{word}</span>
+                  </span>
+                ))}
               </span>
-            )}
-            {selectedFlavors.map((f) => (
-              <span key={f} className="flex items-center gap-1.5 text-xs bg-secondary text-foreground px-3 py-1 rounded-full font-medium border border-border">
-                {f}
-                <button onClick={() => setSelectedFlavors(selectedFlavors.filter((x) => x !== f))}>
-                  <X className="w-3 h-3" />
-                </button>
+              <span className="block" style={{ overflow: "hidden", paddingBottom: "0.2em", marginBottom: "-0.2em" }}>
+                <em className="word-up not-italic inline-block" style={{ color: "var(--accent)", animationDelay: "560ms" }}>Story</em>
               </span>
-            ))}
-            {(activeFilterCount > 0 || searchQuery) && (
-              <button onClick={clearAll} className="text-xs text-muted-foreground hover:text-accent transition-colors font-medium">
-                Clear all
-              </button>
-            )}
-          </div>
+            </h1>
 
-          <p className="text-xs text-muted-foreground whitespace-nowrap">
-            <span className="font-semibold text-foreground">{filteredCakes.length}</span> cake{filteredCakes.length !== 1 ? "s" : ""}
-          </p>
-
-          {/* Sheet — opened via nav button */}
-          <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
-            <SheetContent side="right" className="w-[320px] sm:w-[380px] p-0 flex flex-col bg-background border-l border-border/60">
-              <SheetHeader className="px-6 py-5 border-b border-border/60 flex-shrink-0">
-                <div className="flex items-center justify-between">
-                  <SheetTitle className="font-serif text-xl font-bold text-primary">Refine Results</SheetTitle>
-                  {activeFilterCount > 0 && (
-                    <button
-                      onClick={() => { setPriceRange([0, 10000]); setSelectedFlavors([]); setSelectedCategory("All Cakes") }}
-                      className="text-xs text-accent hover:underline font-semibold"
-                    >
-                      Clear all
-                    </button>
-                  )}
-                </div>
-                {activeFilterCount > 0 && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {activeFilterCount} filter{activeFilterCount !== 1 ? "s" : ""} applied
-                  </p>
-                )}
-              </SheetHeader>
-
-              <div className="flex-1 overflow-y-auto px-6 py-5">
-                <FilterPanel
-                  priceRange={priceRange}
-                  setPriceRange={setPriceRange}
-                  selectedFlavors={selectedFlavors}
-                  setSelectedFlavors={setSelectedFlavors}
-                  selectedCategory={selectedCategory}
-                  setSelectedCategory={handleCategoryChange}
-                  categories={dbCategories}
-                  flavours={dbFlavours}
-                />
-              </div>
-
-              <div className="px-6 py-4 border-t border-border/60 flex-shrink-0">
-                <button
-                  onClick={() => setFilterOpen(false)}
-                  className="w-full h-11 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent/90 transition-colors shadow-sm shadow-accent/20"
-                >
-                  Show {filteredCakes.length} result{filteredCakes.length !== 1 ? "s" : ""}
-                </button>
-              </div>
-            </SheetContent>
-          </Sheet>
-
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════
-          Gallery
-      ═══════════════════════════════════ */}
-      <div ref={galleryRef} className="flex-1 w-full max-w-7xl mx-auto px-6 lg:px-12 py-8">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-28 gap-4">
-            <div className="relative w-12 h-12">
-              <div className="absolute inset-0 rounded-full border-4 border-accent/20" />
-              <div className="absolute inset-0 rounded-full border-4 border-t-accent animate-spin" />
-            </div>
-            <p className="text-muted-foreground text-sm">Loading our cakes for you…</p>
-          </div>
-        ) : filteredCakes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-5">
-              <Search className="w-7 h-7 text-muted-foreground" />
-            </div>
-            <h3 className="font-serif text-xl font-semibold text-primary mb-2">No cakes found</h3>
-            <p className="text-muted-foreground text-sm max-w-xs">
-              Try adjusting your search or filters to discover more of our creations.
+            <p className="hero-fade text-muted-foreground text-base lg:text-lg leading-relaxed mb-9 max-w-[380px]" style={{ animationDelay: "720ms" }}>
+              Handcrafted with the finest ingredients, designed to make every celebration truly unforgettable.
             </p>
-            <button onClick={clearAll} className="mt-5 text-sm text-accent font-medium hover:underline">
-              Clear all filters
-            </button>
+
+            <div className="hero-fade flex items-center gap-5 mb-12" style={{ animationDelay: "860ms" }}>
+              <button
+                onClick={() => galleryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                className="group flex items-center gap-2 px-7 py-3.5 bg-primary text-primary-foreground text-sm font-semibold rounded-full hover:bg-primary/85 transition-all duration-300 shadow-md shadow-primary/15"
+              >
+                Explore Cakes
+                <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+              </button>
+              <a
+                href="/customize"
+                className="text-sm font-semibold text-primary underline-offset-4 hover:underline transition-all"
+              >
+                Customize Yours →
+              </a>
+            </div>
+
           </div>
-        ) : (
-          <CakeGallery cakes={filteredCakes} />
-        )}
+
+          {/* ── Right — animated illustration ── */}
+          <div className="flex-1 flex items-center justify-center order-1 lg:order-2 w-full">
+            <div
+              className="relative w-full"
+              style={{ height: "clamp(320px, 54vw, 680px)", maxWidth: "560px" }}
+            >
+              <HeroIllustration />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════
+          Gallery — seamless section
+      ═══════════════════════════════════ */}
+      <div ref={galleryRef} className="flex-1 w-full">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-12 pb-12">
+
+          {/* Section header */}
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-7 h-px bg-accent" />
+              <span className="text-[11px] font-semibold tracking-[0.22em] uppercase text-accent">Our Collection</span>
+            </div>
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <h2 className="font-serif text-4xl lg:text-5xl font-bold text-primary leading-none">Browse Our Cakes</h2>
+              <p className="text-sm text-muted-foreground pb-1">
+                <span className="font-semibold text-foreground">{filteredCakes.length}</span> cake{filteredCakes.length !== 1 ? "s" : ""}
+              </p>
+            </div>
+            {(activeFilterCount > 0 || searchQuery) && (
+              <div className="flex flex-wrap items-center gap-2 mt-4">
+                {searchQuery && (
+                  <span className="flex items-center gap-1.5 text-xs bg-accent/10 text-accent px-3 py-1 rounded-full font-medium">
+                    &ldquo;{searchQuery}&rdquo;
+                    <button onClick={() => { setSearchQuery(""); window.dispatchEvent(new CustomEvent("cake-search", { detail: "" })) }}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {selectedCategory !== "All Cakes" && (
+                  <span className="flex items-center gap-1.5 text-xs bg-secondary text-foreground px-3 py-1 rounded-full font-medium border border-border">
+                    {selectedCategory}
+                    <button onClick={() => setSelectedCategory("All Cakes")}><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+                {selectedFlavors.map((f) => (
+                  <span key={f} className="flex items-center gap-1.5 text-xs bg-secondary text-foreground px-3 py-1 rounded-full font-medium border border-border">
+                    {f}
+                    <button onClick={() => setSelectedFlavors(selectedFlavors.filter((x) => x !== f))}><X className="w-3 h-3" /></button>
+                  </span>
+                ))}
+                <button onClick={clearAll} className="text-xs text-muted-foreground hover:text-accent transition-colors font-medium">Clear all</button>
+              </div>
+            )}
+          </div>
+
+          {/* Content */}
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-28 gap-4">
+              <div className="relative w-12 h-12">
+                <div className="absolute inset-0 rounded-full border-4 border-accent/20" />
+                <div className="absolute inset-0 rounded-full border-4 border-t-accent animate-spin" />
+              </div>
+              <p className="text-muted-foreground text-sm">Loading our cakes for you…</p>
+            </div>
+          ) : filteredCakes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-5">
+                <Search className="w-7 h-7 text-muted-foreground" />
+              </div>
+              <h3 className="font-serif text-xl font-semibold text-primary mb-2">No cakes found</h3>
+              <p className="text-muted-foreground text-sm max-w-xs">
+                Try adjusting your search or filters to discover more of our creations.
+              </p>
+              <button onClick={clearAll} className="mt-5 text-sm text-accent font-medium hover:underline">
+                Clear all filters
+              </button>
+            </div>
+          ) : (
+            <CakeGallery cakes={filteredCakes} />
+          )}
+        </div>
+
+        {/* Filter sheet — triggered by nav event, no visible button needed here */}
+        <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
+          <SheetContent side="right" className="w-[320px] sm:w-[380px] p-0 flex flex-col bg-background border-l border-border/60">
+            <SheetHeader className="px-6 py-5 border-b border-border/60 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <SheetTitle className="font-serif text-xl font-bold text-primary">Refine Results</SheetTitle>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={() => { setPriceRange([0, 10000]); setSelectedFlavors([]); setSelectedCategory("All Cakes") }}
+                    className="text-xs text-accent hover:underline font-semibold"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+              {activeFilterCount > 0 && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {activeFilterCount} filter{activeFilterCount !== 1 ? "s" : ""} applied
+                </p>
+              )}
+            </SheetHeader>
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              <FilterPanel
+                priceRange={priceRange}
+                setPriceRange={setPriceRange}
+                selectedFlavors={selectedFlavors}
+                setSelectedFlavors={setSelectedFlavors}
+                selectedCategory={selectedCategory}
+                setSelectedCategory={handleCategoryChange}
+                categories={dbCategories}
+                flavours={dbFlavours}
+              />
+            </div>
+            <div className="px-6 py-4 border-t border-border/60 flex-shrink-0">
+              <button
+                onClick={() => setFilterOpen(false)}
+                className="w-full h-11 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent/90 transition-colors shadow-sm shadow-accent/20"
+              >
+                Show {filteredCakes.length} result{filteredCakes.length !== 1 ? "s" : ""}
+              </button>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   )
