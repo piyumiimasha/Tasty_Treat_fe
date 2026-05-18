@@ -125,7 +125,9 @@ export function getUserInfo(): UserInfo | null {
 
 // Check if user is authenticated
 export function isAuthenticated(): boolean {
-  return !!getAuthToken();
+  const token = getAuthToken();
+  if (!token) return false;
+  return !isTokenExpired(token);
 }
 
 // Logout user

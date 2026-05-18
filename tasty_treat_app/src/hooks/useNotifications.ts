@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import * as signalR from '@microsoft/signalr'
-import { getAuthToken, getUserInfo } from '@/lib/api/auth'
+import { getAuthToken, getUserInfo, isTokenExpired } from '@/lib/api/auth'
 import { getNotificationsForUser, markNotificationsRead, type NotificationDto } from '@/lib/api/notifications'
 
 const HUB_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://localhost:55079') + '/hubs/notifications'
@@ -17,6 +17,8 @@ export function useNotifications() {
   useEffect(() => {
     const userInfo = getUserInfo()
     if (!userInfo) return
+    const token = getAuthToken()
+    if (!token || isTokenExpired(token)) return
 
     getNotificationsForUser(userInfo.userId).then(data => {
       setNotifications(data)
