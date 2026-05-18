@@ -34,11 +34,11 @@ export default function CakeCard({ cake, onClick }: CakeCardProps) {
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-500" />
 
       {/* Hover — name slides up from bottom */}
-      <div className="absolute inset-x-0 bottom-0 p-5 translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out">
-        <p className="font-serif text-white text-xl font-semibold leading-tight drop-shadow-md">
+      <div className="absolute inset-x-0 bottom-0 p-3.5 translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out">
+        <p className="font-serif text-white text-base font-semibold leading-tight drop-shadow-md">
           {cake.name}
         </p>
-        <p className="text-white/65 text-xs mt-1 tracking-wide uppercase">{cake.category}</p>
+        <p className="text-white/65 text-[10px] mt-0.5 tracking-wide uppercase">{cake.category}</p>
       </div>
     </div>
   )

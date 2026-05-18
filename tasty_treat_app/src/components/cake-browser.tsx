@@ -10,6 +10,7 @@ import { mapItemToCake, Cake } from "@/lib/mappers/item-mapper"
 import { useToast } from "@/hooks/use-toast"
 import { Search, X, ArrowRight } from "lucide-react"
 import HeroIllustration from "./hero-illustration"
+import CustomerReviews from "./customer-reviews"
 import {
   Sheet,
   SheetContent,
@@ -311,6 +312,9 @@ export default function CakeBrowser() {
           </SheetContent>
         </Sheet>
       </div>
+
+      {/* Customer reviews */}
+      <CustomerReviews />
     </div>
   )
 }
