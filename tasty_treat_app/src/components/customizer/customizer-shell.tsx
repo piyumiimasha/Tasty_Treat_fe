@@ -209,7 +209,7 @@ export default function CustomizerShell() {
           {/* ── Right panel ── */}
           <div className="space-y-4">
             <div className="rounded-2xl border overflow-hidden divide-y shadow-sm"
-              style={{ borderColor: "#f0cede", background: "rgba(255,255,255,0.82)", backdropFilter: "blur(8px)", divideColor: "#f5e0ea" }}>
+              style={{ borderColor: "#f0cede", background: "rgba(255,255,255,0.82)", backdropFilter: "blur(8px)" }}>
               {loadingOptions ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-20">
                   <div className="h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" style={{ borderColor: "#ECC0D0", borderTopColor: "transparent" }} />
