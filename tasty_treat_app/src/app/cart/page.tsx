@@ -64,7 +64,9 @@ export default function CartPage() {
 
     setCalculatingFee(true)
     try {
-      const { fee, distanceKm: km } = await calculateDeliveryFee(customerAddress)
+      const result = await calculateDeliveryFee(customerAddress)
+      if (!result) throw new Error("Could not resolve address")
+      const { fee, distanceKm: km } = result
       setDeliveryFee(fee)
       setDistanceKm(km)
       router.push(`/checkout?quoteId=${quoteId}&deliveryFee=${fee}&distanceKm=${km}`)
