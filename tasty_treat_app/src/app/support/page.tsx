@@ -436,7 +436,7 @@ export default function SupportPage() {
     <main className="bg-background flex flex-col overflow-hidden" style={{ height: "calc(100vh - 56px)" }}>
 
       {/* Page header */}
-      <div className="flex-shrink-0 px-6 py-4 border-b border-border/60 bg-background/80 backdrop-blur-sm">
+      <div className="flex-shrink-0 px-6 py-4 bg-background/80 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 mb-0.5">
