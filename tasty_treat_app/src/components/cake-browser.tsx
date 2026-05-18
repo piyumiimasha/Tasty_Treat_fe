@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Search, X, ArrowRight } from "lucide-react"
 import HeroIllustration from "./hero-illustration"
 import CustomerReviews from "./customer-reviews"
+import Footer from "./footer"
 import {
   Sheet,
   SheetContent,
@@ -315,6 +316,9 @@ export default function CakeBrowser() {
 
       {/* Customer reviews */}
       <CustomerReviews />
+
+      {/* Footer */}
+      <Footer />
     </div>
   )
 }
