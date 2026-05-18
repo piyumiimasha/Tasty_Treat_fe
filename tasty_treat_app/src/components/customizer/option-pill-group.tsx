@@ -27,21 +27,36 @@ export default function OptionPillGroup({ label, options, selected, multiSelect,
 
   return (
     <div>
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{label}</p>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex items-center gap-2 mb-2.5">
+        <div className="w-1 h-3.5 rounded-full" style={{ background: "#D98FAC" }} />
+        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#A0526E" }}>{label}</p>
+        {multiSelect && (
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full ml-1"
+            style={{ background: "#fde0ef", color: "#C97B96" }}>
+            multi
+          </span>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-2">
         {options.map((opt) => (
           <button
             key={opt.id}
             onClick={() => handleClick(opt.id)}
-            className={`px-3.5 py-1 rounded-full text-sm font-medium border transition-all duration-150 ${
-              isSelected(opt.id)
-                ? "bg-accent text-white border-accent shadow-sm shadow-accent/20"
-                : "bg-secondary/50 border-border text-foreground hover:bg-muted hover:border-accent/40"
-            }`}
+            className="px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-150"
+            style={isSelected(opt.id) ? {
+              background: "linear-gradient(135deg, #A0526E, #C97B96)",
+              color: "white",
+              border: "1.5px solid #A0526E",
+              boxShadow: "0 2px 8px rgba(160,82,110,0.25)",
+            } : {
+              background: "rgba(255,255,255,0.7)",
+              color: "var(--foreground)",
+              border: "1.5px solid #f0cede",
+            }}
           >
             {opt.label}
             {opt.price > 0 && (
-              <span className={`ml-1.5 text-xs ${isSelected(opt.id) ? "text-white/80" : "text-muted-foreground"}`}>
+              <span className="ml-1.5 text-xs" style={{ opacity: isSelected(opt.id) ? 0.8 : 0.55 }}>
                 +Rs.{opt.price}
               </span>
             )}

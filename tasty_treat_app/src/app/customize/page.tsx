@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function CustomizePage() {
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen" style={{ background: "#fdeef5" }}>
       <CustomizerShell />
     </main>
   )
