@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import {
   Package, Check, Palette, ChefHat, MessageCircle,
-  ShoppingBag, Star, ClipboardList, ChevronDown, ChevronUp,
+  ShoppingBag, Star, ClipboardList, ChevronDown, ChevronUp, Truck,
 } from "lucide-react"
 import Link from "next/link"
 import { getUserInfo } from "@/lib/api/auth"
@@ -35,19 +35,29 @@ interface QuoteDto {
   items: string
 }
 
-const STATUS_PIPELINE = ["Pending", "In Progress", "Baking", "Decoration", "Ready for Pickup", "Completed"]
+const PICKUP_PIPELINE   = ["Pending", "In Progress", "Baking", "Decoration", "Ready for Pickup", "Completed"]
+const DELIVERY_PIPELINE = ["Pending", "In Progress", "Baking", "Decoration", "Ready for Delivery", "Out for Delivery", "Completed"]
 
-const STAGES: { name: string; icon: React.ReactNode }[] = [
-  { name: "Confirmed",    icon: <Check className="w-4 h-4" /> },
-  { name: "Baking",       icon: <ChefHat className="w-4 h-4" /> },
-  { name: "Decoration",   icon: <Palette className="w-4 h-4" /> },
-  { name: "Ready",        icon: <Package className="w-4 h-4" /> },
-  { name: "Completed",    icon: <Check className="w-4 h-4" /> },
+const PICKUP_STAGES: { name: string; icon: React.ReactNode }[] = [
+  { name: "Confirmed",  icon: <Check className="w-4 h-4" /> },
+  { name: "Baking",     icon: <ChefHat className="w-4 h-4" /> },
+  { name: "Decoration", icon: <Palette className="w-4 h-4" /> },
+  { name: "Ready",      icon: <Package className="w-4 h-4" /> },
+  { name: "Completed",  icon: <Check className="w-4 h-4" /> },
 ]
 
-function stageStatus(stageIndex: number, statusIndex: number): "completed" | "active" | "pending" {
+const DELIVERY_STAGES: { name: string; icon: React.ReactNode }[] = [
+  { name: "Confirmed",  icon: <Check className="w-4 h-4" /> },
+  { name: "Baking",     icon: <ChefHat className="w-4 h-4" /> },
+  { name: "Decoration", icon: <Palette className="w-4 h-4" /> },
+  { name: "Ready",      icon: <Package className="w-4 h-4" /> },
+  { name: "On the Way", icon: <Truck className="w-4 h-4" /> },
+  { name: "Completed",  icon: <Check className="w-4 h-4" /> },
+]
+
+function stageStatus(stageIndex: number, statusIndex: number, pipelineLength: number): "completed" | "active" | "pending" {
   if (stageIndex === 0) return "completed"
-  if (statusIndex === STATUS_PIPELINE.length - 1) return "completed"
+  if (statusIndex === pipelineLength - 1) return "completed"
   const pipelineIndex = stageIndex + 1
   if (pipelineIndex < statusIndex) return "completed"
   if (pipelineIndex === statusIndex) return "active"
@@ -56,8 +66,11 @@ function stageStatus(stageIndex: number, statusIndex: number): "completed" | "ac
 
 // ─── Horizontal stepper ───────────────────────────────────────────────────────
 
-function OrderStepper({ statusIndex }: { statusIndex: number }) {
-  const idx = statusIndex === -1 ? 0 : statusIndex
+function OrderStepper({ status, isDelivery }: { status: string; isDelivery: boolean }) {
+  const pipeline = isDelivery ? DELIVERY_PIPELINE : PICKUP_PIPELINE
+  const stages   = isDelivery ? DELIVERY_STAGES   : PICKUP_STAGES
+  const rawIdx   = pipeline.indexOf(status)
+  const idx      = rawIdx === -1 ? 0 : rawIdx
   return (
     <div className="w-full px-2 py-6">
       <div className="relative flex items-start justify-between">
@@ -65,8 +78,8 @@ function OrderStepper({ statusIndex }: { statusIndex: number }) {
         {/* Connecting track behind everything */}
         <div className="absolute top-5 left-0 right-0 h-0.5 bg-border mx-[2.5%]" />
 
-        {STAGES.map((stage, i) => {
-          const s = stageStatus(i, idx)
+        {stages.map((stage, i) => {
+          const s = stageStatus(i, idx, pipeline.length)
           const isCompleted = s === "completed"
           const isActive    = s === "active"
 
@@ -157,6 +170,7 @@ function StatusPill({ status }: { status: string }) {
     "Decoration":       { bg: "#F3E8FF", text: "#6B21A8", dot: "#A855F7" },
     "Ready for Pickup":   { bg: "#D1FAE5", text: "#065F46", dot: "#10B981" },
     "Ready for Delivery": { bg: "#D1FAE5", text: "#065F46", dot: "#10B981" },
+    "Out for Delivery":   { bg: "#DBEAFE", text: "#1E40AF", dot: "#3B82F6" },
     "Completed":          { bg: "#D1FAE5", text: "#065F46", dot: "#10B981" },
   }
   const c = map[status] ?? { bg: "#F3F4F6", text: "#374151", dot: "#9CA3AF" }
@@ -287,8 +301,7 @@ export default function OrdersPage() {
         ) : (
           <div className="space-y-5">
             {orders.map((order) => {
-              const normalizedStatus = order.status === "Ready for Delivery" ? "Ready for Pickup" : order.status
-              const statusIndex = STATUS_PIPELINE.indexOf(normalizedStatus)
+              const isDelivery = !!order.deliveryAddress || order.status.includes("Delivery") || order.status === "Out for Delivery"
               const items = quoteItems[order.orderId] ?? []
               const first = items[0]
               const title = first
@@ -348,7 +361,7 @@ export default function OrdersPage() {
                       style={{ background: "oklch(0.995 0.003 82)" }}>
 
                       {/* Horizontal progress stepper */}
-                      <OrderStepper statusIndex={statusIndex} />
+                      <OrderStepper status={order.status} isDelivery={isDelivery} />
 
                       {/* Divider */}
                       <div className="h-px bg-border/50 mb-5" />

@@ -16,7 +16,12 @@ function headers(): HeadersInit {
 }
 
 
-const STATUS_OPTIONS = ["Pending", "Baking", "Decoration", "Ready for Pickup", "Ready for Delivery", "Delivery Completed", "Completed", "Cancelled"]
+const PICKUP_STATUSES   = ["Pending", "Baking", "Decoration", "Ready for Pickup", "Completed", "Cancelled"]
+const DELIVERY_STATUSES = ["Pending", "Baking", "Decoration", "Ready for Delivery", "Cancelled"]
+
+function getStatusOptions(deliveryAddress: string | null | undefined): string[] {
+  return deliveryAddress ? DELIVERY_STATUSES : PICKUP_STATUSES
+}
 
 const statusColor: Record<string, string> = {
   "Pending":            "bg-amber-100 text-amber-800",
@@ -24,7 +29,7 @@ const statusColor: Record<string, string> = {
   "Decoration":         "bg-purple-100 text-purple-800",
   "Ready for Pickup":   "bg-teal-100 text-teal-800",
   "Ready for Delivery": "bg-sky-100 text-sky-800",
-  "Delivery Completed": "bg-emerald-100 text-emerald-800",
+  "Out for Delivery":   "bg-blue-100 text-blue-800",
   "Completed":          "bg-green-100 text-green-800",
   "Cancelled":          "bg-red-100 text-red-800",
 }
@@ -102,7 +107,7 @@ export default function OrderManagement() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              {STATUS_OPTIONS.map((s) => (
+              {[...new Set([...PICKUP_STATUSES, ...DELIVERY_STATUSES, "Out for Delivery"])].map((s) => (
                 <SelectItem key={s} value={s}>{s}</SelectItem>
               ))}
             </SelectContent>
@@ -166,7 +171,7 @@ export default function OrderManagement() {
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          {STATUS_OPTIONS.map((s) => (
+                          {getStatusOptions(order.deliveryAddress).map((s) => (
                             <SelectItem key={s} value={s}>{s}</SelectItem>
                           ))}
                         </SelectContent>

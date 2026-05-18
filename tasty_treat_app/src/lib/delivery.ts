@@ -18,15 +18,15 @@ async function geocode(address: string): Promise<[number, number] | null> {
 
 export async function calculateDeliveryFee(
   customerAddress: string
-): Promise<{ fee: number; distanceKm: number }> {
-  if (!ORS_API_KEY) throw new Error("ORS API key is not configured. Restart the dev server after adding it to .env.local.")
+): Promise<{ fee: number; distanceKm: number } | null> {
+  if (!ORS_API_KEY) return null
 
   const [bakeryCoords, customerCoords] = await Promise.all([
     geocode(BAKERY_ADDRESS),
     geocode(customerAddress),
   ])
 
-  if (!bakeryCoords || !customerCoords) throw new Error("Could not resolve one or both addresses")
+  if (!bakeryCoords || !customerCoords) return null
 
   const res = await fetch(
     "https://api.openrouteservice.org/v2/matrix/driving-car",
@@ -45,16 +45,11 @@ export async function calculateDeliveryFee(
     }
   )
 
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`Matrix API failed (${res.status}): ${text}`)
-  }
+  if (!res.ok) return null
 
   const data = await res.json()
-  console.log("[ors matrix]", JSON.stringify(data))
-
   const meters: number = data.distances?.[0]?.[0]
-  if (meters == null) throw new Error(`Could not calculate route between the two locations.`)
+  if (meters == null) return null
 
   const distanceKm = Math.round((meters / 1000) * 10) / 10
   const fee = Math.round(distanceKm) * RATE_PER_KM

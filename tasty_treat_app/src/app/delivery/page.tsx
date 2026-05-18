@@ -205,8 +205,12 @@ export default function DeliveryPage() {
   const loadOrders = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await getOrdersByStatus("Ready for Delivery")
-      setOrders(data.sort((a, b) => new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime()))
+      const [ready, onTheWay] = await Promise.all([
+        getOrdersByStatus("Ready for Delivery"),
+        getOrdersByStatus("Out for Delivery"),
+      ])
+      const merged = [...ready, ...onTheWay]
+      setOrders(merged.sort((a, b) => new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime()))
     } catch {
       toast({ title: "Error", description: "Failed to load deliveries.", variant: "destructive" })
     } finally {
@@ -231,10 +235,23 @@ export default function DeliveryPage() {
       .catch(() => {})
   }, [orders])
 
+  const markOnTheWay = async (orderId: number) => {
+    try {
+      setCompleting(orderId)
+      await updateOrder(orderId, { status: "Out for Delivery" })
+      setOrders(prev => prev.map(o => o.orderId === orderId ? { ...o, status: "Out for Delivery" } : o))
+      toast({ title: "On the way!", description: `Order #ORD-${orderId} is now out for delivery.` })
+    } catch {
+      toast({ title: "Error", description: "Failed to update order.", variant: "destructive" })
+    } finally {
+      setCompleting(null)
+    }
+  }
+
   const markDelivered = async (orderId: number) => {
     try {
       setCompleting(orderId)
-      await updateOrder(orderId, { status: "Delivery Completed" })
+      await updateOrder(orderId, { status: "Completed" })
       setOrders(prev => prev.filter(o => o.orderId !== orderId))
       toast({ title: "Delivered!", description: `Order #ORD-${orderId} marked as delivered.` })
     } catch {
@@ -283,9 +300,15 @@ export default function DeliveryPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-3">
                         <span className="font-semibold text-foreground text-base">#ORD-{order.orderId}</span>
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">
-                          Ready for Delivery
-                        </span>
+                        {order.status === "Out for Delivery" ? (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 flex items-center gap-1">
+                            <Truck className="w-3 h-3" /> On the Way
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                            Ready for Delivery
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
@@ -337,15 +360,27 @@ export default function DeliveryPage() {
                       </div>
                     </div>
 
-                    <Button
-                      onClick={() => markDelivered(order.orderId)}
-                      disabled={completing === order.orderId}
-                      className="flex-shrink-0 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
-                      size="sm"
-                    >
-                      <PackageCheck className="w-4 h-4" />
-                      {completing === order.orderId ? "Updating…" : "Mark Delivered"}
-                    </Button>
+                    {order.status === "Out for Delivery" ? (
+                      <Button
+                        onClick={() => markDelivered(order.orderId)}
+                        disabled={completing === order.orderId}
+                        className="flex-shrink-0 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                        size="sm"
+                      >
+                        <PackageCheck className="w-4 h-4" />
+                        {completing === order.orderId ? "Updating…" : "Mark Delivered"}
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => markOnTheWay(order.orderId)}
+                        disabled={completing === order.orderId}
+                        className="flex-shrink-0 gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                        size="sm"
+                      >
+                        <Truck className="w-4 h-4" />
+                        {completing === order.orderId ? "Updating…" : "On the Way"}
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>

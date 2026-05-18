@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { CheckCircle2, Truck, CreditCard, Loader2, MapPin, Pencil, Check } from "lucide-react"
+import { CheckCircle2, Truck, CreditCard, Loader2, MapPin, Pencil, Check, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -37,6 +37,7 @@ export default function CheckoutPage() {
     searchParams.get("distanceKm") ? Number(searchParams.get("distanceKm")) : null
   )
   const [calculatingFee, setCalculatingFee] = useState(false)
+  const [fulfillmentType, setFulfillmentType] = useState<"delivery" | "pickup">("delivery")
   const [savedAddress, setSavedAddress] = useState("")
   const [editingAddress, setEditingAddress] = useState(false)
   const [formData, setFormData] = useState({
@@ -73,8 +74,17 @@ export default function CheckoutPage() {
     }).catch(() => {})
   }, [loadCart])
 
+  // Reset fee to 0 when switching to pickup
+  useEffect(() => {
+    if (fulfillmentType === "pickup") {
+      setDeliveryFee(0)
+      setDistanceKm(null)
+    }
+  }, [fulfillmentType])
+
   // Recalculate delivery fee when address fields change (debounced)
   useEffect(() => {
+    if (fulfillmentType !== "delivery") return
     const fullAddress = editingAddress
       ? [formData.address, formData.city, formData.state].filter(Boolean).join(", ")
       : savedAddress
@@ -84,11 +94,11 @@ export default function CheckoutPage() {
     debounceRef.current = setTimeout(async () => {
       setCalculatingFee(true)
       try {
-        const { fee, distanceKm: km } = await calculateDeliveryFee(fullAddress)
-        setDeliveryFee(fee)
-        setDistanceKm(km)
-      } catch (err) {
-        console.error("[delivery fee]", err)
+        const result = await calculateDeliveryFee(fullAddress)
+        if (result) {
+          setDeliveryFee(result.fee)
+          setDistanceKm(result.distanceKm)
+        }
       } finally {
         setCalculatingFee(false)
       }
@@ -119,9 +129,11 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           customerId: info.userId,
           status: "Pending",
-          deliveryAddress: editingAddress
-            ? `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`.trim()
-            : savedAddress,
+          deliveryAddress: fulfillmentType === "pickup"
+            ? null
+            : editingAddress
+              ? `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`.trim()
+              : savedAddress,
           specialInstructions: "",
           totalAmount: total,
         }),
@@ -183,8 +195,38 @@ export default function CheckoutPage() {
               <Card className="p-8">
                 <div className="flex items-center gap-3 mb-6">
                   <Truck className="w-6 h-6 text-primary" />
-                  <h2 className="text-2xl font-serif font-bold text-foreground">Shipping Information</h2>
+                  <h2 className="text-2xl font-serif font-bold text-foreground">Order Details</h2>
                 </div>
+
+                {/* Fulfillment picker */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-foreground mb-3">How would you like to receive your order?</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFulfillmentType("delivery")}
+                      className={`p-4 rounded-xl border-2 text-left transition-all ${
+                        fulfillmentType === "delivery" ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                      }`}
+                    >
+                      <Truck className="w-5 h-5 mb-2 text-primary" />
+                      <p className="font-semibold text-sm text-foreground">Delivery</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Delivered to your door</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFulfillmentType("pickup")}
+                      className={`p-4 rounded-xl border-2 text-left transition-all ${
+                        fulfillmentType === "pickup" ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                      }`}
+                    >
+                      <Package className="w-5 h-5 mb-2 text-primary" />
+                      <p className="font-semibold text-sm text-foreground">Pickup</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Collect from our store</p>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-semibold text-foreground mb-2">First Name</label>
@@ -209,8 +251,8 @@ export default function CheckoutPage() {
                   <label className="block text-sm font-semibold text-foreground mb-2">Delivery Date</label>
                   <Input name="deliveryDate" type="date" value={formData.deliveryDate} onChange={handleInputChange} />
                 </div>
-                {/* Delivery Address */}
-                <div className="mb-2">
+                {/* Delivery Address — only for delivery orders */}
+                {fulfillmentType === "delivery" && <div className="mb-2">
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-semibold text-foreground">Delivery Address</label>
                     {savedAddress && (
@@ -258,7 +300,7 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                   )}
-                </div>
+                </div>}
               </Card>
             )}
 
@@ -334,26 +376,28 @@ export default function CheckoutPage() {
                   <span>Tax (10%)</span>
                   <span>Rs. {tax.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm text-foreground">
-                  <span className="flex items-center gap-1">
-                    Delivery
-                    {distanceKm !== null && (
-                      <span className="text-xs text-muted-foreground">({distanceKm} km)</span>
-                    )}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    {calculatingFee ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : deliveryFee > 0 ? (
-                      `Rs. ${deliveryFee.toLocaleString()}`
-                    ) : (
-                      <span className="text-muted-foreground text-xs italic">enter address</span>
-                    )}
-                  </span>
-                </div>
+                {fulfillmentType === "delivery" && (
+                  <div className="flex justify-between text-sm text-foreground">
+                    <span className="flex items-center gap-1">
+                      Delivery
+                      {distanceKm !== null && (
+                        <span className="text-xs text-muted-foreground">({distanceKm} km)</span>
+                      )}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      {calculatingFee ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : deliveryFee > 0 ? (
+                        `Rs. ${deliveryFee.toLocaleString()}`
+                      ) : (
+                        <span className="text-muted-foreground text-xs italic">enter address</span>
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {distanceKm !== null && (
+              {fulfillmentType === "delivery" && distanceKm !== null && (
                 <div className="flex items-start gap-2 mb-4 p-2.5 rounded-lg bg-muted/50 text-xs text-muted-foreground">
                   <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                   <span>Rs. {RATE_PER_KM}/km × {distanceKm} km = Rs. {deliveryFee.toLocaleString()}</span>
